@@ -38,9 +38,6 @@ images:
 # Build options
 options:
   logging: CLOUD_LOGGING_ONLY
-  substitutions:
-    _SERVICE_NAME: basketball-academy
-    _REGION: asia-southeast1
 
 # Build timeout
 timeout: '1200s'
