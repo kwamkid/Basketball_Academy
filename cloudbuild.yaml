@@ -30,5 +30,9 @@ steps:
 images:
   - 'gcr.io/$PROJECT_ID/basketball-academy'
 
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 # Build timeout
 timeout: '1200s'
