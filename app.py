@@ -3,10 +3,12 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime
+import pytz
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import secrets
 from dotenv import load_dotenv
+import math
 
 # Load environment variables
 load_dotenv()
@@ -39,6 +41,63 @@ except Exception as e:
         pass
 
 db = firestore.client()
+
+# Thailand Timezone
+TH_TZ = pytz.timezone('Asia/Bangkok')
+
+
+# Custom Jinja2 filters
+@app.template_filter('thai_datetime')
+def thai_datetime_filter(timestamp):
+    """แปลง timestamp เป็นวันเวลาไทย"""
+    if not timestamp:
+        return '-'
+
+    try:
+        # ถ้าเป็น DatetimeWithNanoseconds จาก Firestore
+        if hasattr(timestamp, 'tzinfo'):
+            # แปลงเป็น timezone ไทย
+            thai_time = timestamp.astimezone(TH_TZ)
+            return thai_time.strftime('%d/%m/%Y %H:%M น.')
+        else:
+            return str(timestamp)
+    except:
+        return str(timestamp)
+
+
+@app.template_filter('thai_date')
+def thai_date_filter(date_str):
+    """แปลงวันที่เป็นรูปแบบไทย"""
+    if not date_str:
+        return '-'
+
+    try:
+        # ถ้าเป็น string format YYYY-MM-DD
+        if isinstance(date_str, str) and '-' in date_str:
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+            return date_obj.strftime('%d/%m/%Y')
+        return date_str
+    except:
+        return date_str
+
+
+@app.template_filter('thai_time')
+def thai_time_filter(timestamp):
+    """แปลง timestamp เป็นเวลาไทย (เฉพาะเวลา)"""
+    if not timestamp:
+        return '-'
+
+    try:
+        # ถ้าเป็น DatetimeWithNanoseconds จาก Firestore
+        if hasattr(timestamp, 'tzinfo'):
+            # แปลงเป็น timezone ไทย
+            thai_time = timestamp.astimezone(TH_TZ)
+            return thai_time.strftime('%H:%M น.')
+        else:
+            return str(timestamp)
+    except:
+        return str(timestamp)
+
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -152,6 +211,12 @@ def index():
             if parent_doc.exists:
                 student['parent'] = parent_doc.to_dict()
 
+        # แปลง createdAt เป็นเวลาไทย
+        if 'createdAt' in student and student['createdAt']:
+            student['createdAtThai'] = student['createdAt'].astimezone(TH_TZ) if hasattr(student['createdAt'],
+                                                                                         'astimezone') else student[
+                'createdAt']
+
         students.append(student)
 
     return render_template('index.html', students=students)
@@ -256,30 +321,57 @@ def student_detail(student_id):
         if parent_doc.exists:
             student['parent'] = parent_doc.to_dict()
 
-    # ดึงประวัติการเช็คอิน
-    attendance = []
-    try:
-        # ลองใช้ query แบบมี index ก่อน
-        attendance_ref = db.collection('attendance').where('studentId', '==', student_id).order_by('checkInTime',
-                                                                                                   direction=firestore.Query.DESCENDING).stream()
+    # Get page number from query string
+    page = request.args.get('page', 1, type=int)
+    per_page = 8  # จำนวนรายการต่อหน้า
 
+    # ดึงประวัติการเช็คอินทั้งหมด
+    all_attendance = []
+    try:
+        attendance_ref = db.collection('attendance').where('studentId', '==', student_id).stream()
         for doc in attendance_ref:
             record = doc.to_dict()
             record['id'] = doc.id
-            attendance.append(record)
+            all_attendance.append(record)
+    except:
+        pass
+
+    # เรียงลำดับ
+    all_attendance.sort(key=lambda x: x.get('checkInTime', ''), reverse=True)
+
+    # คำนวณ pagination
+    total_attendance = len(all_attendance)
+    total_pages = math.ceil(total_attendance / per_page)
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    attendance = all_attendance[start_idx:end_idx]
+
+    # ดึงประวัติการจัดการครั้งเรียน
+    class_logs = []
+    try:
+        logs_ref = db.collection('class_logs').where('studentId', '==', student_id).order_by('timestamp',
+                                                                                             direction=firestore.Query.DESCENDING).stream()
+        for doc in logs_ref:
+            log = doc.to_dict()
+            log['id'] = doc.id
+            class_logs.append(log)
     except:
         # ถ้า index ยังไม่พร้อม ใช้วิธีดึงทั้งหมดแล้วกรองเอง
-        attendance_ref = db.collection('attendance').where('studentId', '==', student_id).stream()
-
-        for doc in attendance_ref:
-            record = doc.to_dict()
-            record['id'] = doc.id
-            attendance.append(record)
-
+        logs_ref = db.collection('class_logs').where('studentId', '==', student_id).stream()
+        for doc in logs_ref:
+            log = doc.to_dict()
+            log['id'] = doc.id
+            class_logs.append(log)
         # เรียงลำดับด้วย Python
-        attendance.sort(key=lambda x: x.get('checkInTime', ''), reverse=True)
+        class_logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
 
-    return render_template('student_detail.html', student=student, attendance=attendance)
+    return render_template('student_detail.html',
+                           student=student,
+                           attendance=attendance,
+                           class_logs=class_logs,
+                           page=page,
+                           total_pages=total_pages,
+                           total_attendance=total_attendance)
 
 
 @app.route('/checkin/<student_id>', methods=['POST'])
@@ -298,11 +390,13 @@ def checkin(student_id):
     new_remaining = student['remainingClasses'] - 1
     student_ref.update({'remainingClasses': new_remaining})
 
-    # บันทึกประวัติ
+    # บันทึกประวัติ (ใช้เวลาไทย)
+    th_time = datetime.now(TH_TZ)
     attendance_data = {
         'studentId': student_id,
-        'checkInDate': datetime.now().strftime('%Y-%m-%d'),
+        'checkInDate': th_time.strftime('%Y-%m-%d'),
         'checkInTime': firestore.SERVER_TIMESTAMP,
+        'checkInTimeStr': th_time.strftime('%H:%M น.'),  # เก็บเวลาเป็น string สำหรับแสดงผล
         'remainingAfter': new_remaining
     }
 
@@ -321,8 +415,22 @@ def add_classes(student_id):
     student_ref = db.collection('students').document(student_id)
     student = student_ref.get().to_dict()
 
-    new_remaining = student['remainingClasses'] + amount
+    old_remaining = student['remainingClasses']
+    new_remaining = old_remaining + amount
     student_ref.update({'remainingClasses': new_remaining})
+
+    # บันทึก Log การเพิ่มครั้งเรียน
+    log_data = {
+        'studentId': student_id,
+        'type': 'add_classes',
+        'oldValue': old_remaining,
+        'newValue': new_remaining,
+        'changeAmount': amount,
+        'performedBy': current_user.username,
+        'timestamp': firestore.SERVER_TIMESTAMP,
+        'note': f'เพิ่มครั้งเรียน {amount} ครั้ง'
+    }
+    db.collection('class_logs').add(log_data)
 
     flash(f'เพิ่มครั้งเรียนสำเร็จ! ปัจจุบันมี {new_remaining} ครั้ง', 'success')
     return redirect(url_for('student_detail', student_id=student_id))
@@ -392,8 +500,8 @@ def cancel_checkin(attendance_id):
     attendance = attendance_doc.to_dict()
     student_id = attendance['studentId']
 
-    # ตรวจสอบว่าเป็นการเช็คอินวันนี้หรือไม่ (optional)
-    today = datetime.now().strftime('%Y-%m-%d')
+    # ตรวจสอบว่าเป็นการเช็คอินวันนี้หรือไม่ (ใช้เวลาไทย)
+    today = datetime.now(TH_TZ).strftime('%Y-%m-%d')
     if attendance['checkInDate'] != today:
         flash('ไม่สามารถยกเลิกการเช็คอินย้อนหลังได้ ยกเลิกได้เฉพาะเช็คอินวันนี้เท่านั้น', 'warning')
         return redirect(url_for('student_detail', student_id=student_id))
@@ -454,9 +562,27 @@ def edit_parent(parent_id):
 def edit_classes(student_id):
     """แก้ไขจำนวนครั้งเรียน"""
     new_amount = int(request.form['new_amount'])
+    reason = request.form.get('reason', 'ไม่ได้ระบุเหตุผล')
 
     student_ref = db.collection('students').document(student_id)
+    student = student_ref.get().to_dict()
+
+    old_remaining = student['remainingClasses']
     student_ref.update({'remainingClasses': new_amount})
+
+    # บันทึก Log การแก้ไขครั้งเรียน
+    log_data = {
+        'studentId': student_id,
+        'type': 'edit_classes',
+        'oldValue': old_remaining,
+        'newValue': new_amount,
+        'changeAmount': new_amount - old_remaining,
+        'performedBy': current_user.username,
+        'timestamp': firestore.SERVER_TIMESTAMP,
+        'reason': reason,
+        'note': f'แก้ไขจำนวนครั้งเรียนจาก {old_remaining} เป็น {new_amount} ครั้ง'
+    }
+    db.collection('class_logs').add(log_data)
 
     flash(f'แก้ไขจำนวนครั้งเรียนเป็น {new_amount} ครั้ง สำเร็จ!', 'success')
     return redirect(url_for('student_detail', student_id=student_id))

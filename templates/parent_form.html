@@ -129,7 +129,7 @@
                     <i class="fas fa-history"></i> ข้อมูลระบบ
                 </h6>
                 <small class="text-muted">
-                    <p class="mb-1">สร้างเมื่อ: {{ parent.createdAt.strftime('%d/%m/%Y %H:%M') if parent.createdAt else '-' }}</p>
+                    <p class="mb-1">สร้างเมื่อ: {{ parent.createdAt|thai_datetime if parent.createdAt else '-' }}</p>
                     <p class="mb-0">ID: {{ parent.id }}</p>
                 </small>
             </div>

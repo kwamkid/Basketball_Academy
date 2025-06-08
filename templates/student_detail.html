@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}{{ student.name }} - Basketball Academy{% endblock %}
+{% block title %}{{ student.firstName }} {{ student.lastName }} - Basketball Academy{% endblock %}
 
 {% block content %}
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb mb-0">
         <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">หน้าหลัก</a></li>
-        <li class="breadcrumb-item active">{{ student.name }}</li>
+        <li class="breadcrumb-item active">{{ student.firstName }} {{ student.lastName }}</li>
     </ol>
 </nav>
 
@@ -125,116 +125,384 @@
                     <p class="text-muted mb-0">ครั้งคงเหลือ</p>
                 </div>
 
-                <!-- Add Classes Form -->
-                <form method="POST" action="{{ url_for('add_classes', student_id=student.id) }}" class="mb-3">
-                    <div class="input-group">
-                        <input type="number" name="amount" class="form-control" value="12" min="1" required>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-plus"></i> เพิ่ม
-                        </button>
-                    </div>
-                </form>
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addClassesModal">
+                        <i class="fas fa-plus"></i> เพิ่มครั้งเรียน (เติมคอร์ส)
+                    </button>
 
-                <!-- Edit Button -->
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal">
-                    <i class="fas fa-edit"></i> แก้ไขจำนวน
-                </button>
+                    <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editClassesModal">
+                        <i class="fas fa-edit"></i> แก้ไขจำนวนครั้ง (กรณีพิเศษ)
+                    </button>
+                </div>
+
+                <!-- Package Info -->
+                <div class="mt-3 p-3 bg-light rounded">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        1 คอร์สมาตรฐาน = 8 ครั้ง (3,000 บาท)
+                    </small>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Attendance History -->
+    <!-- Attendance History & Logs -->
     <div class="col-12 col-lg-8">
-        <div class="card">
-            <div class="card-header border-0 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-history text-info"></i> ประวัติการเช็คอิน</h5>
-                {% if student.remainingClasses > 0 %}
-                <form method="POST" action="{{ url_for('checkin', student_id=student.id) }}"
-                      onsubmit="return confirm('ยืนยันการเช็คอิน?')">
-                    <button type="submit" class="btn btn-sm btn-success">
-                        <i class="fas fa-check"></i> เช็คอินวันนี้
-                    </button>
-                </form>
-                {% endif %}
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>วันที่</th>
-                                <th>เวลา</th>
-                                <th class="text-center">คงเหลือ</th>
-                                <th class="text-center">จัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for record in attendance %}
-                            <tr>
-                                <td>{{ record.checkInDate }}</td>
-                                <td>
-                                    {% if record.checkInTime %}
-                                        {% if record.checkInTime.__class__.__name__ == 'DatetimeWithNanoseconds' %}
-                                            {{ record.checkInTime.strftime('%H:%M น.') }}
-                                        {% else %}
-                                            {{ record.checkInTime }}
-                                        {% endif %}
+        <!-- Nav Tabs -->
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#attendance-tab">
+                    <i class="fas fa-calendar-check"></i> ประวัติการเช็คอิน
+                    {% if total_attendance > 0 %}
+                        <span class="badge bg-primary ms-1">{{ total_attendance }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#logs-tab">
+                    <i class="fas fa-history"></i> ประวัติการจัดการครั้งเรียน
+                </a>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Attendance Tab -->
+            <div class="tab-pane fade show active" id="attendance-tab">
+                <div class="card">
+                    <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-calendar-check text-info"></i> ประวัติการเช็คอิน</h5>
+                        {% if student.remainingClasses > 0 %}
+                        <form method="POST" action="{{ url_for('checkin', student_id=student.id) }}"
+                              onsubmit="return confirm('ยืนยันการเช็คอิน?')">
+                            <button type="submit" class="btn btn-sm btn-success">
+                                <i class="fas fa-check"></i> เช็คอินวันนี้
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>วันที่</th>
+                                        <th>เวลา</th>
+                                        <th class="text-center">คงเหลือ</th>
+                                        <th class="text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in attendance %}
+                                    <tr>
+                                        <td>{{ record.checkInDate }}</td>
+                                        <td>
+                                            {% if record.checkInTime %}
+                                                {% if record.checkInTime.__class__.__name__ == 'DatetimeWithNanoseconds' %}
+                                                    {{ record.checkInTime.strftime('%H:%M น.') }}
+                                                {% else %}
+                                                    {{ record.checkInTime }}
+                                                {% endif %}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">{{ record.remainingAfter }} ครั้ง</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <form method="POST" action="{{ url_for('cancel_checkin', attendance_id=record.id) }}"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('ยืนยันการยกเลิกเช็คอิน?\n(จะคืน 1 ครั้งให้นักเรียน)')">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="ยกเลิกเช็คอิน">
+                                                    <i class="fas fa-undo"></i>
+                                                    <span class="d-none d-sm-inline">ยกเลิก</span>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
                                     {% else %}
-                                        -
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5">
+                                            <div class="text-muted">
+                                                <i class="fas fa-calendar-times fa-3x mb-3 d-block opacity-25"></i>
+                                                <p class="mb-0">ยังไม่มีประวัติการเช็คอิน</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if total_pages > 1 %}
+                        <div class="card-footer border-0 d-flex justify-content-between align-items-center">
+                            <div class="text-muted">
+                                แสดง {{ ((page-1)*8)+1 }}-{{ [page*8, total_attendance]|min }} จากทั้งหมด {{ total_attendance }} รายการ
+                            </div>
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    <!-- Previous -->
+                                    <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                                        <a class="page-link" href="{{ url_for('student_detail', student_id=student.id, page=page-1) }}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+
+                                    <!-- Page Numbers -->
+                                    {% for p in range(1, total_pages + 1) %}
+                                        {% if p == 1 or p == total_pages or (p >= page-2 and p <= page+2) %}
+                                            <li class="page-item {% if p == page %}active{% endif %}">
+                                                <a class="page-link" href="{{ url_for('student_detail', student_id=student.id, page=p) }}">{{ p }}</a>
+                                            </li>
+                                        {% elif p == page-3 or p == page+3 %}
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    <!-- Next -->
+                                    <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                                        <a class="page-link" href="{{ url_for('student_detail', student_id=student.id, page=page+1) }}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Class Logs Tab -->
+            <div class="tab-pane fade" id="logs-tab">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h5 class="mb-0"><i class="fas fa-history text-warning"></i> ประวัติการจัดการครั้งเรียน</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>วันที่/เวลา</th>
+                                        <th>ประเภท</th>
+                                        <th>รายละเอียด</th>
+                                        <th>ผู้ดำเนินการ</th>
+                                        <th>หมายเหตุ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if class_logs %}
+                                        {% for log in class_logs %}
+                                        <tr>
+                                            <td>
+                                                {% if log.timestamp %}
+                                                    {% if log.timestamp.__class__.__name__ == 'DatetimeWithNanoseconds' %}
+                                                        {{ log.timestamp.strftime('%d/%m/%Y %H:%M') }}
+                                                    {% else %}
+                                                        {{ log.timestamp }}
+                                                    {% endif %}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if log.type == 'add_classes' %}
+                                                    <span class="badge bg-success">เพิ่มครั้ง</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">แก้ไข</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {{ log.oldValue }} → {{ log.newValue }} ครั้ง
+                                                {% if log.changeAmount > 0 %}
+                                                    <span class="text-success">(+{{ log.changeAmount }})</span>
+                                                {% elif log.changeAmount < 0 %}
+                                                    <span class="text-danger">({{ log.changeAmount }})</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ log.performedBy }}</td>
+                                            <td>
+                                                {% if log.type == 'edit_classes' and log.reason %}
+                                                    {{ log.reason }}
+                                                {% else %}
+                                                    {{ log.note }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5">
+                                            <div class="text-muted">
+                                                <i class="fas fa-history fa-3x mb-3 d-block opacity-25"></i>
+                                                <p class="mb-0">ยังไม่มีประวัติการจัดการครั้งเรียน</p>
+                                            </div>
+                                        </td>
+                                    </tr>
                                     {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge bg-secondary">{{ record.remainingAfter }} ครั้ง</span>
-                                </td>
-                                <td class="text-center">
-                                    <form method="POST" action="{{ url_for('cancel_checkin', attendance_id=record.id) }}"
-                                          class="d-inline"
-                                          onsubmit="return confirm('ยืนยันการยกเลิกเช็คอิน?\n(จะคืน 1 ครั้งให้นักเรียน)')">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="ยกเลิกเช็คอิน">
-                                            <i class="fas fa-undo"></i>
-                                            <span class="d-none d-sm-inline">ยกเลิก</span>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center py-5">
-                                    <div class="text-muted">
-                                        <i class="fas fa-calendar-times fa-3x mb-3 d-block opacity-25"></i>
-                                        <p class="mb-0">ยังไม่มีประวัติการเช็คอิน</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Edit Classes Modal -->
-<div class="modal fade" id="editModal" tabindex="-1">
+<!-- Add Classes Modal -->
+<div class="modal fade" id="addClassesModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title">แก้ไขจำนวนครั้งเรียน</h5>
+                <h5 class="modal-title"><i class="fas fa-plus text-success"></i> เพิ่มครั้งเรียน</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('edit_classes', student_id=student.id) }}">
+            <form method="POST" action="{{ url_for('add_classes', student_id=student.id) }}">
                 <div class="modal-body">
-                    <label class="form-label">จำนวนครั้งใหม่</label>
-                    <input type="number" name="new_amount" class="form-control"
-                           value="{{ student.remainingClasses }}" min="0" required>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> เติมคอร์สใหม่
+                    </div>
+
+                    <label class="form-label fw-medium">เลือกแพ็คเกจ</label>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="package" id="package8"
+                                       value="8" checked onchange="updateAmount(8)">
+                                <label class="form-check-label" for="package8">
+                                    <strong>1 คอร์ส</strong><br>
+                                    <small class="text-muted">8 ครั้ง (3,000 บาท)</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="package" id="package16"
+                                       value="16" onchange="updateAmount(16)">
+                                <label class="form-check-label" for="package16">
+                                    <strong>2 คอร์ส</strong><br>
+                                    <small class="text-muted">16 ครั้ง (6,000 บาท)</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">จำนวนครั้งที่จะเพิ่ม</label>
+                        <input type="number" name="amount" id="amountInput" class="form-control"
+                               value="8" min="1" required readonly>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="customAmount"
+                               onchange="toggleCustomAmount()">
+                        <label class="form-check-label" for="customAmount">
+                            กำหนดจำนวนเอง
+                        </label>
+                    </div>
+
+                    <div class="alert alert-warning mb-0">
+                        <strong>ครั้งปัจจุบัน:</strong> {{ student.remainingClasses }} ครั้ง<br>
+                        <strong>หลังเพิ่ม:</strong> <span id="afterAdd">{{ student.remainingClasses + 8 }}</span> ครั้ง
+                    </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> ยืนยันการเพิ่ม
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Edit Classes Modal -->
+<div class="modal fade" id="editClassesModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 bg-warning bg-opacity-10">
+                <h5 class="modal-title text-warning">
+                    <i class="fas fa-exclamation-triangle"></i> แก้ไขจำนวนครั้งเรียน
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('edit_classes', student_id=student.id) }}">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>คำเตือน:</strong> การแก้ไขจำนวนครั้งโดยตรงควรใช้เฉพาะกรณีพิเศษเท่านั้น
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">จำนวนครั้งใหม่ <span class="text-danger">*</span></label>
+                        <input type="number" name="new_amount" class="form-control"
+                               value="{{ student.remainingClasses }}" min="0" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">เหตุผลในการแก้ไข <span class="text-danger">*</span></label>
+                        <textarea name="reason" class="form-control" rows="3" required
+                                  placeholder="กรุณาระบุเหตุผลในการแก้ไขจำนวนครั้ง เช่น แก้ไขข้อผิดพลาด, ชดเชยครั้งเรียน ฯลฯ"></textarea>
+                    </div>
+
+                    <div class="alert alert-info mb-0">
+                        <small>
+                            <i class="fas fa-info-circle"></i>
+                            การแก้ไขทุกครั้งจะถูกบันทึกประวัติไว้ในระบบ
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-warning"
+                            onclick="return confirm('ยืนยันการแก้ไขจำนวนครั้งเรียน?\n\nการดำเนินการนี้จะถูกบันทึกประวัติไว้')">
+                        <i class="fas fa-save"></i> บันทึกการแก้ไข
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateAmount(value) {
+    if (!document.getElementById('customAmount').checked) {
+        document.getElementById('amountInput').value = value;
+        document.getElementById('afterAdd').textContent = {{ student.remainingClasses }} + parseInt(value);
+    }
+}
+
+function toggleCustomAmount() {
+    const customAmount = document.getElementById('customAmount').checked;
+    const amountInput = document.getElementById('amountInput');
+    const packageInputs = document.querySelectorAll('input[name="package"]');
+
+    amountInput.readOnly = !customAmount;
+
+    if (customAmount) {
+        packageInputs.forEach(input => input.disabled = true);
+        amountInput.focus();
+    } else {
+        packageInputs.forEach(input => input.disabled = false);
+        const checkedPackage = document.querySelector('input[name="package"]:checked');
+        if (checkedPackage) {
+            amountInput.value = checkedPackage.value;
+        }
+    }
+}
+
+// Update afterAdd when amount changes
+document.getElementById('amountInput').addEventListener('input', function() {
+    const newAmount = parseInt(this.value) || 0;
+    document.getElementById('afterAdd').textContent = {{ student.remainingClasses }} + newAmount;
+});
+</script>
 {% endblock %}

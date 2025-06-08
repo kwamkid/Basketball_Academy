@@ -150,11 +150,11 @@
                         <label class="form-label fw-medium">จำนวนครั้งเริ่มต้น <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" name="remainingClasses" class="form-control"
-                                   value="12" min="0" required>
+                                   value="8" min="0" required>
                             <span class="input-group-text">ครั้ง</span>
                         </div>
                         <small class="text-muted">
-                            <i class="fas fa-info-circle"></i> ปกติ 1 คอร์ส = 12 ครั้ง (3,500 บาท)
+                            <i class="fas fa-info-circle"></i> ปกติ 1 คอร์ส = 8 ครั้ง (3,000 บาท)
                         </small>
                     </div>
                 </div>
@@ -185,7 +185,7 @@
                         <li class="mb-2">ข้อมูลผู้ปกครองไม่บังคับ สามารถเพิ่มทีหลังได้</li>
                         <li class="mb-2">ควรกรอกประวัติแพ้ยาให้ละเอียดเพื่อความปลอดภัย</li>
                         {% if not student %}
-                        <li>1 คอร์สมาตรฐาน = 12 ครั้ง</li>
+                        <li>1 คอร์สมาตรฐาน = 8 ครั้ง</li>
                         {% endif %}
                     </ul>
                 </div>
@@ -199,7 +199,7 @@
                         <i class="fas fa-history"></i> ข้อมูลระบบ
                     </h6>
                     <small class="text-muted">
-                        <p class="mb-1">สร้างเมื่อ: {{ student.createdAt.strftime('%d/%m/%Y %H:%M') if student.createdAt else '-' }}</p>
+                        <p class="mb-1">สร้างเมื่อ: {{ student.createdAt|thai_datetime if student.createdAt else '-' }}</p>
                         <p class="mb-0">ID: {{ student.id }}</p>
                     </small>
                 </div>
