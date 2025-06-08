@@ -1,28 +1,10 @@
 steps:
-  # Build and push container image to GCR
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/basketball-academy:$COMMIT_SHA', '.']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/basketball-academy', '.']
 
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/basketball-academy:$COMMIT_SHA']
+    args: ['push', 'gcr.io/$PROJECT_ID/basketball-academy']
 
-  # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'basketball-academy'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/basketball-academy:$COMMIT_SHA'
-      - '--region'
-      - 'asia-southeast1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--memory'
-      - '512Mi'
-      - '--max-instances'
-      - '10'
-
-timeout: '1200s'
+    args: ['run', 'deploy', 'basketball-academy', '--image', 'gcr.io/$PROJECT_ID/basketball-academy', '--region', 'asia-southeast1', '--platform', 'managed', '--allow-unauthenticated']
