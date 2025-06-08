@@ -159,6 +159,14 @@ def parents():
     for doc in parents_ref:
         parent = doc.to_dict()
         parent['id'] = doc.id
+
+        # นับจำนวนนักเรียนที่ผูกกับผู้ปกครองคนนี้
+        students_count = 0
+        students_ref = db.collection('students').where('parentId', '==', doc.id).stream()
+        for student in students_ref:
+            students_count += 1
+
+        parent['students_count'] = students_count
         parents.append(parent)
 
     return render_template('parents.html', parents=parents)

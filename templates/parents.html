@@ -94,8 +94,11 @@
                             </a>
                         </td>
                         <td class="d-none d-sm-table-cell">
-                            <span class="badge bg-secondary">0 คน</span>
-                            <!-- TODO: นับจำนวนนักเรียนที่ผูกกับผู้ปกครองคนนี้ -->
+                            {% if parent.students_count > 0 %}
+                                <span class="badge bg-primary">{{ parent.students_count }} คน</span>
+                            {% else %}
+                                <span class="badge bg-secondary">0 คน</span>
+                            {% endif %}
                         </td>
                         <td class="text-center">
                             <a href="{{ url_for('edit_parent', parent_id=parent.id) }}"
