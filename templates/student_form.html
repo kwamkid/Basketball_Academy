@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'แก้ไขข้อมูล' if student else 'เพิ่ม' }}นักเรียน - Basketball Academy{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">หน้าหลัก</a></li>
+        {% if student %}
+        <li class="breadcrumb-item"><a href="{{ url_for('student_detail', student_id=student.id) }}" class="text-decoration-none">{{ student.firstName }} {{ student.lastName }}</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active">{{ 'แก้ไขข้อมูล' if student else 'เพิ่มนักเรียน' }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+        <i class="fas fa-{{ 'user-edit text-warning' if student else 'user-plus text-success' }}"></i>
+        <span>{{ 'แก้ไขข้อมูลนักเรียน' if student else 'เพิ่มนักเรียนใหม่' }}</span>
+    </h1>
+</div>
+
+<form method="POST">
+    <div class="row g-4">
+        <!-- ข้อมูลนักเรียน -->
+        <div class="col-12 col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-semibold">ข้อมูลนักเรียน</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-medium">ชื่อ <span class="text-danger">*</span></label>
+                            <input type="text" name="firstName" class="form-control" required
+                                   value="{{ student.firstName if student else '' }}">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-medium">นามสกุล <span class="text-danger">*</span></label>
+                            <input type="text" name="lastName" class="form-control" required
+                                   value="{{ student.lastName if student else '' }}">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-medium">ชื่อเล่น <span class="text-danger">*</span></label>
+                            <input type="text" name="nickname" class="form-control" required
+                                   value="{{ student.nickname if student else '' }}">
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-medium">วันเกิด <span class="text-danger">*</span></label>
+                            <input type="date" name="birthDate" class="form-control" required
+                                   value="{{ student.birthDate if student else '' }}">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-medium">เพศ <span class="text-danger">*</span></label>
+                            <select name="gender" class="form-select" required>
+                                <option value="">-- เลือกเพศ --</option>
+                                <option value="ชาย" {% if student and student.gender == 'ชาย' %}selected{% endif %}>ชาย</option>
+                                <option value="หญิง" {% if student and student.gender == 'หญิง' %}selected{% endif %}>หญิง</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label fw-medium">สัญชาติ</label>
+                            <input type="text" name="nationality" class="form-control"
+                                   value="{{ student.nationality if student else 'ไทย' }}">
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">โรงเรียน <span class="text-danger">*</span></label>
+                            <input type="text" name="school" class="form-control" required
+                                   placeholder="เช่น โรงเรียนสาธิต"
+                                   value="{{ student.school if student else '' }}">
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label class="form-label fw-medium">ระดับชั้น <span class="text-danger">*</span></label>
+                            <select name="grade" class="form-select" required>
+                                <option value="">-- เลือกชั้น --</option>
+                                <optgroup label="อนุบาล">
+                                    <option value="อ.1" {% if student and student.grade == 'อ.1' %}selected{% endif %}>อนุบาล 1</option>
+                                    <option value="อ.2" {% if student and student.grade == 'อ.2' %}selected{% endif %}>อนุบาล 2</option>
+                                    <option value="อ.3" {% if student and student.grade == 'อ.3' %}selected{% endif %}>อนุบาล 3</option>
+                                </optgroup>
+                                <optgroup label="ประถม">
+                                    <option value="ป.1" {% if student and student.grade == 'ป.1' %}selected{% endif %}>ประถม 1</option>
+                                    <option value="ป.2" {% if student and student.grade == 'ป.2' %}selected{% endif %}>ประถม 2</option>
+                                    <option value="ป.3" {% if student and student.grade == 'ป.3' %}selected{% endif %}>ประถม 3</option>
+                                    <option value="ป.4" {% if student and student.grade == 'ป.4' %}selected{% endif %}>ประถม 4</option>
+                                    <option value="ป.5" {% if student and student.grade == 'ป.5' %}selected{% endif %}>ประถม 5</option>
+                                    <option value="ป.6" {% if student and student.grade == 'ป.6' %}selected{% endif %}>ประถม 6</option>
+                                </optgroup>
+                                <optgroup label="มัธยม">
+                                    <option value="ม.1" {% if student and student.grade == 'ม.1' %}selected{% endif %}>มัธยมต้น 1</option>
+                                    <option value="ม.2" {% if student and student.grade == 'ม.2' %}selected{% endif %}>มัธยมต้น 2</option>
+                                    <option value="ม.3" {% if student and student.grade == 'ม.3' %}selected{% endif %}>มัธยมต้น 3</option>
+                                    <option value="ม.4" {% if student and student.grade == 'ม.4' %}selected{% endif %}>มัธยมปลาย 4</option>
+                                    <option value="ม.5" {% if student and student.grade == 'ม.5' %}selected{% endif %}>มัธยมปลาย 5</option>
+                                    <option value="ม.6" {% if student and student.grade == 'ม.6' %}selected{% endif %}>มัธยมปลาย 6</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label class="form-label fw-medium">เบอร์ติดต่อ</label>
+                            <input type="tel" name="phone" class="form-control"
+                                   placeholder="0812345678"
+                                   value="{{ student.phone if student else '' }}">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-medium">ประวัติแพ้ยา/อาหาร</label>
+                            <textarea name="allergies" class="form-control" rows="2"
+                                      placeholder="ระบุประวัติการแพ้ยา อาหาร หรือสิ่งอื่นๆ (ถ้ามี)">{{ student.allergies if student else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ผู้ปกครอง -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-semibold">ข้อมูลผู้ปกครอง</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">เลือกผู้ปกครอง</label>
+                        <select name="parentId" class="form-select">
+                            <option value="">-- ไม่ระบุ / เพิ่มใหม่ทีหลัง --</option>
+                            {% for parent in parents %}
+                            <option value="{{ parent.id }}" {% if student and student.parentId == parent.id %}selected{% endif %}>
+                                {{ '👨 คุณพ่อ' if parent.type == 'father' else '👩 คุณแม่' }} - {{ parent.name }}
+                                ({{ parent.phone }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">
+                            หากยังไม่มีผู้ปกครอง <a href="{{ url_for('add_parent') }}" target="_blank" class="text-decoration-none">คลิกเพิ่มผู้ปกครอง</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            {% if not student %}
+            <!-- จำนวนครั้ง (เฉพาะตอนเพิ่มใหม่) -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-semibold">คอร์สเรียน</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">จำนวนครั้งเริ่มต้น <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" name="remainingClasses" class="form-control"
+                                   value="12" min="0" required>
+                            <span class="input-group-text">ครั้ง</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> ปกติ 1 คอร์ส = 12 ครั้ง (3,500 บาท)
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ปุ่มบันทึก -->
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-{{ 'warning' if student else 'success' }}">
+                    <i class="fas fa-save"></i> {{ 'บันทึกการแก้ไข' if student else 'บันทึกข้อมูล' }}
+                </button>
+                <a href="{{ url_for('student_detail', student_id=student.id) if student else url_for('index') }}"
+                   class="btn btn-secondary">
+                    <i class="fas fa-times"></i> ยกเลิก
+                </a>
+            </div>
+        </div>
+
+        <!-- คำแนะนำ -->
+        <div class="col-12 col-lg-4">
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <h5 class="card-title fw-semibold">
+                        <i class="fas fa-lightbulb text-warning"></i> คำแนะนำ
+                    </h5>
+                    <ul class="ps-3 mb-0">
+                        <li class="mb-2">กรอกข้อมูลให้ครบทุกช่องที่มี <span class="text-danger">*</span></li>
+                        <li class="mb-2">ข้อมูลผู้ปกครองไม่บังคับ สามารถเพิ่มทีหลังได้</li>
+                        <li class="mb-2">ควรกรอกประวัติแพ้ยาให้ละเอียดเพื่อความปลอดภัย</li>
+                        {% if not student %}
+                        <li>1 คอร์สมาตรฐาน = 12 ครั้ง</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            {% if student %}
+            <!-- ประวัติการแก้ไข -->
+            <div class="card bg-info bg-opacity-10 border-0 mt-3">
+                <div class="card-body">
+                    <h6 class="fw-semibold text-info">
+                        <i class="fas fa-history"></i> ข้อมูลระบบ
+                    </h6>
+                    <small class="text-muted">
+                        <p class="mb-1">สร้างเมื่อ: {{ student.createdAt.strftime('%d/%m/%Y %H:%M') if student.createdAt else '-' }}</p>
+                        <p class="mb-0">ID: {{ student.id }}</p>
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</form>
+{% endblock %}

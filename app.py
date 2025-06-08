@@ -138,8 +138,16 @@ def index():
         student = doc.to_dict()
         student['id'] = doc.id
 
+        # Handle old data format (name) vs new format (firstName, lastName)
+        if 'name' in student and 'firstName' not in student:
+            # Convert old format to new format
+            names = student['name'].split(' ', 1)
+            student['firstName'] = names[0]
+            student['lastName'] = names[1] if len(names) > 1 else ''
+            student['nickname'] = student.get('nickname', names[0])
+
         # ดึงข้อมูลผู้ปกครอง
-        if 'parentId' in student:
+        if 'parentId' in student and student['parentId']:
             parent_doc = db.collection('parents').document(student['parentId']).get()
             if parent_doc.exists:
                 student['parent'] = parent_doc.to_dict()
@@ -172,19 +180,25 @@ def parents():
     return render_template('parents.html', parents=parents)
 
 
-@app.route('/add_parent', methods=['POST'])
+@app.route('/add_parent', methods=['GET', 'POST'])
 @login_required
 def add_parent():
-    """เพิ่มผู้ปกครอง"""
-    data = {
-        'name': request.form['name'],
-        'phone': request.form['phone'],
-        'createdAt': firestore.SERVER_TIMESTAMP
-    }
+    """เพิ่มผู้ปกครอง - หน้าแยก"""
+    if request.method == 'POST':
+        data = {
+            'type': request.form.get('type', 'father'),
+            'name': request.form['name'],
+            'occupation': request.form.get('occupation', ''),
+            'phone': request.form['phone'],
+            'address': request.form.get('address', ''),
+            'createdAt': firestore.SERVER_TIMESTAMP
+        }
 
-    db.collection('parents').add(data)
-    flash('เพิ่มผู้ปกครองสำเร็จ!', 'success')
-    return redirect(url_for('parents'))
+        db.collection('parents').add(data)
+        flash('เพิ่มผู้ปกครองสำเร็จ!', 'success')
+        return redirect(url_for('parents'))
+
+    return render_template('parent_form.html', parent=None)
 
 
 @app.route('/add_student', methods=['GET', 'POST'])
@@ -193,10 +207,17 @@ def add_student():
     """เพิ่มนักเรียน"""
     if request.method == 'POST':
         data = {
-            'name': request.form['name'],
-            'school': request.form['school'],
+            'firstName': request.form['firstName'],
+            'lastName': request.form['lastName'],
+            'nickname': request.form['nickname'],
             'birthDate': request.form['birthDate'],
-            'parentId': request.form['parentId'],
+            'gender': request.form['gender'],
+            'nationality': request.form.get('nationality', 'ไทย'),
+            'school': request.form['school'],
+            'grade': request.form['grade'],
+            'phone': request.form.get('phone', ''),
+            'allergies': request.form.get('allergies', ''),
+            'parentId': request.form.get('parentId', ''),
             'remainingClasses': int(request.form['remainingClasses']),
             'createdAt': firestore.SERVER_TIMESTAMP
         }
@@ -213,7 +234,7 @@ def add_student():
         parent['id'] = doc.id
         parents.append(parent)
 
-    return render_template('add_student.html', parents=parents)
+    return render_template('student_form.html', student=None, parents=parents)
 
 
 @app.route('/student/<student_id>')
@@ -307,17 +328,54 @@ def add_classes(student_id):
     return redirect(url_for('student_detail', student_id=student_id))
 
 
-@app.route('/edit_classes/<student_id>', methods=['POST'])
+@app.route('/edit_student/<student_id>', methods=['GET', 'POST'])
 @login_required
-def edit_classes(student_id):
-    """แก้ไขจำนวนครั้งเรียน"""
-    new_amount = int(request.form['new_amount'])
+def edit_student(student_id):
+    """แก้ไขข้อมูลนักเรียน"""
+    student_doc = db.collection('students').document(student_id).get()
 
-    student_ref = db.collection('students').document(student_id)
-    student_ref.update({'remainingClasses': new_amount})
+    if not student_doc.exists:
+        flash('ไม่พบข้อมูลนักเรียน', 'error')
+        return redirect(url_for('index'))
 
-    flash(f'แก้ไขจำนวนครั้งเรียนเป็น {new_amount} ครั้ง สำเร็จ!', 'success')
-    return redirect(url_for('student_detail', student_id=student_id))
+    student = student_doc.to_dict()
+    student['id'] = student_id
+
+    # Handle old data format
+    if 'name' in student and 'firstName' not in student:
+        names = student['name'].split(' ', 1)
+        student['firstName'] = names[0]
+        student['lastName'] = names[1] if len(names) > 1 else ''
+        student['nickname'] = student.get('nickname', names[0])
+
+    if request.method == 'POST':
+        data = {
+            'firstName': request.form['firstName'],
+            'lastName': request.form['lastName'],
+            'nickname': request.form['nickname'],
+            'birthDate': request.form['birthDate'],
+            'gender': request.form['gender'],
+            'nationality': request.form.get('nationality', 'ไทย'),
+            'school': request.form['school'],
+            'grade': request.form['grade'],
+            'phone': request.form.get('phone', ''),
+            'allergies': request.form.get('allergies', ''),
+            'parentId': request.form.get('parentId', '')
+        }
+
+        db.collection('students').document(student_id).update(data)
+        flash('แก้ไขข้อมูลนักเรียนสำเร็จ!', 'success')
+        return redirect(url_for('student_detail', student_id=student_id))
+
+    # ดึงรายชื่อผู้ปกครอง
+    parents = []
+    parents_ref = db.collection('parents').stream()
+    for doc in parents_ref:
+        parent = doc.to_dict()
+        parent['id'] = doc.id
+        parents.append(parent)
+
+    return render_template('student_form.html', student=student, parents=parents)
 
 
 @app.route('/cancel_checkin/<attendance_id>', methods=['POST'])
@@ -369,15 +427,39 @@ def edit_parent(parent_id):
 
     if request.method == 'POST':
         data = {
+            'type': request.form.get('type', parent.get('type', 'father')),
             'name': request.form['name'],
-            'phone': request.form['phone']
+            'occupation': request.form.get('occupation', ''),
+            'phone': request.form['phone'],
+            'address': request.form.get('address', '')
         }
 
         db.collection('parents').document(parent_id).update(data)
         flash('แก้ไขข้อมูลผู้ปกครองสำเร็จ!', 'success')
         return redirect(url_for('parents'))
 
-    return render_template('edit_parent.html', parent=parent)
+    # ดึงรายชื่อนักเรียนที่ผูกกับผู้ปกครองคนนี้
+    students = []
+    students_ref = db.collection('students').where('parentId', '==', parent_id).stream()
+    for doc in students_ref:
+        student = doc.to_dict()
+        student['id'] = doc.id
+        students.append(student)
+
+    return render_template('parent_form.html', parent=parent, students=students)
+
+
+@app.route('/edit_classes/<student_id>', methods=['POST'])
+@login_required
+def edit_classes(student_id):
+    """แก้ไขจำนวนครั้งเรียน"""
+    new_amount = int(request.form['new_amount'])
+
+    student_ref = db.collection('students').document(student_id)
+    student_ref.update({'remainingClasses': new_amount})
+
+    flash(f'แก้ไขจำนวนครั้งเรียนเป็น {new_amount} ครั้ง สำเร็จ!', 'success')
+    return redirect(url_for('student_detail', student_id=student_id))
 
 
 @app.route('/delete_parent/<parent_id>', methods=['POST'])

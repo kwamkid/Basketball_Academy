@@ -8,32 +8,10 @@
         <i class="fas fa-users text-info"></i>
         <span>รายชื่อผู้ปกครอง</span>
     </h1>
-</div>
-
-<!-- ฟอร์มเพิ่มผู้ปกครอง -->
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0 fw-semibold"><i class="fas fa-user-plus"></i> เพิ่มผู้ปกครอง</h5>
-    </div>
-    <div class="card-body">
-        <form method="POST" action="{{ url_for('add_parent') }}" class="row g-3">
-            <div class="col-12 col-md-5">
-                <label class="form-label fw-medium">ชื่อผู้ปกครอง</label>
-                <input type="text" name="name" class="form-control" required
-                       placeholder="เช่น คุณสมชาย ใจดี">
-            </div>
-            <div class="col-12 col-md-5">
-                <label class="form-label fw-medium">เบอร์โทรศัพท์</label>
-                <input type="tel" name="phone" class="form-control" required
-                       placeholder="เช่น 0812345678" pattern="[0-9]{10}">
-            </div>
-            <div class="col-12 col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-save"></i> บันทึก
-                </button>
-            </div>
-        </form>
-    </div>
+    <a href="{{ url_for('add_parent') }}" class="btn btn-info">
+        <i class="fas fa-plus"></i>
+        <span class="d-none d-sm-inline">เพิ่มผู้ปกครองใหม่</span>
+    </a>
 </div>
 
 <!-- Search Section -->
@@ -68,9 +46,12 @@
             <table class="table table-hover mb-0" id="parentsTable">
                 <thead>
                     <tr>
+                        <th>ประเภท</th>
                         <th>ชื่อผู้ปกครอง</th>
+                        <th>อาชีพ</th>
                         <th>เบอร์โทรศัพท์</th>
-                        <th class="d-none d-sm-table-cell">จำนวนบุตรหลาน</th>
+                        <th class="d-none d-md-table-cell">ที่อยู่</th>
+                        <th>บุตรหลาน</th>
                         <th class="text-center">จัดการ</th>
                     </tr>
                 </thead>
@@ -80,6 +61,13 @@
                         data-parent-name="{{ parent.name.lower() }}"
                         data-parent-phone="{{ parent.phone }}">
                         <td>
+                            {% if parent.type == 'father' %}
+                                <span class="badge bg-primary">👨 พ่อ</span>
+                            {% else %}
+                                <span class="badge bg-info">👩 แม่</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             <div class="d-flex align-items-center gap-2">
                                 <div class="avatar-sm rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-center p-2">
                                     <i class="fas fa-user-tie text-info"></i>
@@ -87,13 +75,17 @@
                                 <span class="fw-medium">{{ parent.name }}</span>
                             </div>
                         </td>
+                        <td>{{ parent.occupation or '-' }}</td>
                         <td>
                             <a href="tel:{{ parent.phone }}" class="text-decoration-none text-muted">
                                 <i class="fas fa-phone-alt text-success me-1"></i>
                                 {{ parent.phone }}
                             </a>
                         </td>
-                        <td class="d-none d-sm-table-cell">
+                        <td class="d-none d-md-table-cell">
+                            <small>{{ parent.address or '-' }}</small>
+                        </td>
+                        <td>
                             {% if parent.students_count > 0 %}
                                 <span class="badge bg-primary">{{ parent.students_count }} คน</span>
                             {% else %}
@@ -116,7 +108,7 @@
                     </tr>
                     {% else %}
                     <tr id="emptyRow">
-                        <td colspan="4" class="text-center py-5">
+                        <td colspan="7" class="text-center py-5">
                             <div class="text-muted">
                                 <i class="fas fa-users fa-3x mb-3 d-block opacity-25"></i>
                                 <p class="mb-0">ยังไม่มีข้อมูลผู้ปกครอง</p>
@@ -183,7 +175,7 @@ function filterParents() {
             noResultsRow = document.createElement('tr');
             noResultsRow.id = 'parentNoResultsRow';
             noResultsRow.innerHTML = `
-                <td colspan="4" class="text-center py-4 text-muted">
+                <td colspan="7" class="text-center py-4 text-muted">
                     <i class="fas fa-search fa-2x mb-2 d-block opacity-50"></i>
                     ไม่พบข้อมูลที่ค้นหา
                 </td>

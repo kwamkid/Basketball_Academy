@@ -15,26 +15,54 @@
     <!-- Student Info Card -->
     <div class="col-12 col-lg-4">
         <div class="card mb-4">
-            <div class="card-header border-0 bg-gradient-to-r from-primary to-secondary text-white">
+            <div class="card-header border-0 bg-gradient-to-r from-primary to-secondary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-user"></i> ข้อมูลนักเรียน</h5>
+                <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-sm btn-light">
+                    <i class="fas fa-edit"></i> แก้ไข
+                </a>
             </div>
             <div class="card-body">
                 <div class="text-center mb-3">
                     <div class="avatar-lg rounded-circle bg-primary bg-opacity-10 mx-auto p-4 mb-3">
                         <i class="fas fa-user fa-3x text-primary"></i>
                     </div>
-                    <h4 class="mb-0">{{ student.name }}</h4>
+                    <h4 class="mb-1">{{ student.firstName }} {{ student.lastName }}</h4>
+                    <p class="text-muted mb-0">({{ student.nickname }})</p>
                 </div>
 
                 <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center py-2">
                         <span class="text-muted">โรงเรียน:</span>
-                        <span class="fw-medium">{{ student.school }}</span>
+                        <span class="fw-medium">{{ student.school }} - {{ student.grade }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center py-2">
                         <span class="text-muted">วันเกิด:</span>
                         <span class="fw-medium">{{ student.birthDate }}</span>
                     </div>
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <span class="text-muted">เพศ:</span>
+                        <span class="fw-medium">{{ student.gender }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <span class="text-muted">สัญชาติ:</span>
+                        <span class="fw-medium">{{ student.nationality or 'ไทย' }}</span>
+                    </div>
+                    {% if student.phone %}
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <span class="text-muted">เบอร์ติดต่อ:</span>
+                        <a href="tel:{{ student.phone }}" class="text-decoration-none">
+                            <i class="fas fa-phone-alt text-success"></i> {{ student.phone }}
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if student.allergies %}
+                    <div class="py-2">
+                        <span class="text-muted">ประวัติแพ้ยา:</span>
+                        <div class="alert alert-warning mt-2 mb-0">
+                            <i class="fas fa-exclamation-triangle"></i> {{ student.allergies }}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
 
                 {% if student.parent %}
@@ -42,15 +70,37 @@
                 <div>
                     <h6 class="text-muted mb-3">ข้อมูลผู้ปกครอง</h6>
                     <div class="d-flex justify-content-between align-items-center py-2">
+                        <span class="text-muted">ประเภท:</span>
+                        <span class="fw-medium">
+                            {% if student.parent.type == 'father' %}
+                                👨 คุณพ่อ
+                            {% else %}
+                                👩 คุณแม่
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2">
                         <span class="text-muted">ชื่อ:</span>
                         <span class="fw-medium">{{ student.parent.name }}</span>
                     </div>
+                    {% if student.parent.occupation %}
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <span class="text-muted">อาชีพ:</span>
+                        <span class="fw-medium">{{ student.parent.occupation }}</span>
+                    </div>
+                    {% endif %}
                     <div class="d-flex justify-content-between align-items-center py-2">
                         <span class="text-muted">เบอร์:</span>
                         <a href="tel:{{ student.parent.phone }}" class="text-decoration-none">
                             <i class="fas fa-phone-alt text-success"></i> {{ student.parent.phone }}
                         </a>
                     </div>
+                    {% if student.parent.address %}
+                    <div class="py-2">
+                        <span class="text-muted">ที่อยู่:</span>
+                        <p class="mb-0 mt-1">{{ student.parent.address }}</p>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>

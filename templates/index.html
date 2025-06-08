@@ -83,7 +83,7 @@
                 <tbody>
                     {% for student in students %}
                     <tr class="student-row"
-                        data-student-name="{{ student.name.lower() }}"
+                        data-student-name="{{ (student.firstName + ' ' + student.lastName + ' ' + student.nickname).lower() }}"
                         data-parent-name="{{ student.parent.name.lower() if student.parent else '' }}"
                         data-remaining="{{ student.remainingClasses }}">
                         <td>
@@ -92,10 +92,13 @@
                                 <div class="avatar-sm rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-center p-2">
                                     <i class="fas fa-user text-primary"></i>
                                 </div>
-                                <span class="fw-medium">{{ student.name }}</span>
+                                <div>
+                                    <span class="fw-medium">{{ student.firstName }} {{ student.lastName }}</span>
+                                    <small class="text-muted d-block">({{ student.nickname }})</small>
+                                </div>
                             </a>
                         </td>
-                        <td class="d-none d-md-table-cell text-muted">{{ student.school }}</td>
+                        <td class="d-none d-md-table-cell text-muted">{{ student.school }} - {{ student.grade }}</td>
                         <td>
                             {% if student.parent %}
                                 <span class="text-muted">{{ student.parent.name }}</span>

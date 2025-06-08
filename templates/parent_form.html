@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'แก้ไขข้อมูล' if parent else 'เพิ่ม' }}ผู้ปกครอง - Basketball Academy{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">หน้าหลัก</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('parents') }}" class="text-decoration-none">ผู้ปกครอง</a></li>
+        <li class="breadcrumb-item active">{{ 'แก้ไขข้อมูล' if parent else 'เพิ่มผู้ปกครอง' }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+        <i class="fas fa-{{ 'user-edit text-warning' if parent else 'user-plus text-info' }}"></i>
+        <span>{{ 'แก้ไขข้อมูลผู้ปกครอง' if parent else 'เพิ่มผู้ปกครองใหม่' }}</span>
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0 fw-semibold">ข้อมูลผู้ปกครอง</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label fw-medium">ประเภท <span class="text-danger">*</span></label>
+                            <select name="type" class="form-select" required>
+                                <option value="father" {% if parent and parent.type == 'father' %}selected{% endif %}>👨 คุณพ่อ</option>
+                                <option value="mother" {% if parent and parent.type == 'mother' %}selected{% endif %}>👩 คุณแม่</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-9">
+                            <label class="form-label fw-medium">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control" required
+                                   value="{{ parent.name if parent else '' }}"
+                                   placeholder="เช่น นายสมชาย ใจดี">
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">อาชีพ</label>
+                            <input type="text" name="occupation" class="form-control"
+                                   value="{{ parent.occupation if parent else '' }}"
+                                   placeholder="เช่น พนักงานบริษัท">
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">เบอร์โทรศัพท์ <span class="text-danger">*</span></label>
+                            <input type="tel" name="phone" class="form-control" required
+                                   value="{{ parent.phone if parent else '' }}"
+                                   placeholder="0812345678"
+                                   pattern="[0-9]{10}">
+                            <small class="text-muted">กรอกเบอร์ 10 หลัก ไม่ต้องใส่ขีด</small>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-medium">ที่อยู่บ้าน</label>
+                            <textarea name="address" class="form-control" rows="3"
+                                      placeholder="บ้านเลขที่ หมู่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์">{{ parent.address if parent else '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-{{ 'warning' if parent else 'info' }}">
+                            <i class="fas fa-save"></i> {{ 'บันทึกการแก้ไข' if parent else 'บันทึกข้อมูล' }}
+                        </button>
+                        <a href="{{ url_for('parents') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> ยกเลิก
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ข้อมูลที่เกี่ยวข้อง -->
+    <div class="col-12 col-lg-4">
+        <div class="card bg-light border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-semibold">
+                    <i class="fas fa-info-circle text-info"></i> {{ 'ข้อมูลที่เกี่ยวข้อง' if parent else 'คำแนะนำ' }}
+                </h5>
+
+                {% if parent %}
+                    {% if students and students|length > 0 %}
+                        <p class="text-muted mb-3">ผู้ปกครองคนนี้มีบุตรหลานในระบบ:</p>
+                        <ul class="list-unstyled">
+                            {% for student in students %}
+                            <li class="mb-2">
+                                <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                   class="text-decoration-none">
+                                    <i class="fas fa-user text-primary"></i>
+                                    {{ student.firstName }} {{ student.lastName }} ({{ student.nickname }})
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">ยังไม่มีนักเรียนที่ผูกกับผู้ปกครองคนนี้</p>
+                    {% endif %}
+
+                    <div class="alert alert-info mb-0 mt-3">
+                        <i class="fas fa-lightbulb"></i>
+                        หากต้องการเปลี่ยนผู้ปกครองของนักเรียน กรุณาไปแก้ไขในหน้าข้อมูลนักเรียน
+                    </div>
+                {% else %}
+                    <ul class="ps-3 mb-0">
+                        <li class="mb-2">กรอกข้อมูลให้ครบทุกช่องที่มี <span class="text-danger">*</span></li>
+                        <li class="mb-2">เบอร์โทรต้องเป็นตัวเลข 10 หลัก</li>
+                        <li class="mb-2">สามารถเพิ่มนักเรียนผูกกับผู้ปกครองได้ทีหลัง</li>
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if parent %}
+        <!-- ข้อมูลระบบ -->
+        <div class="card bg-warning bg-opacity-10 border-0 mt-3">
+            <div class="card-body">
+                <h6 class="fw-semibold text-warning">
+                    <i class="fas fa-history"></i> ข้อมูลระบบ
+                </h6>
+                <small class="text-muted">
+                    <p class="mb-1">สร้างเมื่อ: {{ parent.createdAt.strftime('%d/%m/%Y %H:%M') if parent.createdAt else '-' }}</p>
+                    <p class="mb-0">ID: {{ parent.id }}</p>
+                </small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
