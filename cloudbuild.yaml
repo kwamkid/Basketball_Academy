@@ -30,9 +30,10 @@ steps:
 images:
   - 'gcr.io/$PROJECT_ID/basketball-academy'
 
-# Build options
+# Build options - ใช้ default service account
 options:
   logging: CLOUD_LOGGING_ONLY
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
 
 # Build timeout
 timeout: '1200s'
