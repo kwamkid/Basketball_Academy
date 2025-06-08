@@ -1,13 +1,10 @@
 steps:
-  # Build container image
+  # Build and push container image to GCR
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/basketball-academy/app:$SHORT_SHA', '.']
-    id: 'build-image'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/basketball-academy:$COMMIT_SHA', '.']
 
-  # Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/basketball-academy/app:$SHORT_SHA']
-    id: 'push-image'
+    args: ['push', 'gcr.io/$PROJECT_ID/basketball-academy:$COMMIT_SHA']
 
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -17,7 +14,7 @@ steps:
       - 'deploy'
       - 'basketball-academy'
       - '--image'
-      - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/basketball-academy/app:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/basketball-academy:$COMMIT_SHA'
       - '--region'
       - 'asia-southeast1'
       - '--platform'
@@ -27,17 +24,5 @@ steps:
       - '512Mi'
       - '--max-instances'
       - '10'
-      - '--service-account'
-      - 'basketball-academy-sa@basketball-academy-baf77.iam.gserviceaccount.com'
-    id: 'deploy'
 
-# Store images in Artifact Registry
-images:
-  - 'asia-southeast1-docker.pkg.dev/$PROJECT_ID/basketball-academy/app:$SHORT_SHA'
-
-# Build options
-options:
-  logging: CLOUD_LOGGING_ONLY
-
-# Build timeout
 timeout: '1200s'

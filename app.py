@@ -139,7 +139,7 @@ def init_default_admin():
             'username': 'admin',
             'password': generate_password_hash('admin123'),
             'role': 'admin',
-            'createdAt': firestore.SERVER_TIMESTAMP
+            'createdAt': datetime.now(TH_TZ)  # ใช้เวลาไทย
         }
         db.collection('users').add(admin_data)
         print("✅ Created default admin user - username: admin, password: admin123")
@@ -256,7 +256,7 @@ def add_parent():
             'occupation': request.form.get('occupation', ''),
             'phone': request.form['phone'],
             'address': request.form.get('address', ''),
-            'createdAt': firestore.SERVER_TIMESTAMP
+            'createdAt': datetime.now(TH_TZ)  # ใช้เวลาไทย
         }
 
         db.collection('parents').add(data)
@@ -284,7 +284,7 @@ def add_student():
             'allergies': request.form.get('allergies', ''),
             'parentId': request.form.get('parentId', ''),
             'remainingClasses': int(request.form['remainingClasses']),
-            'createdAt': firestore.SERVER_TIMESTAMP
+            'createdAt': datetime.now(TH_TZ)  # ใช้เวลาไทย
         }
 
         db.collection('students').add(data)
@@ -332,6 +332,12 @@ def student_detail(student_id):
         for doc in attendance_ref:
             record = doc.to_dict()
             record['id'] = doc.id
+
+            # แปลงเวลาเป็นเวลาไทย
+            if 'checkInTime' in record and record['checkInTime']:
+                if hasattr(record['checkInTime'], 'tzinfo'):
+                    record['checkInTimeThai'] = record['checkInTime'].astimezone(TH_TZ)
+
             all_attendance.append(record)
     except:
         pass
@@ -395,7 +401,7 @@ def checkin(student_id):
     attendance_data = {
         'studentId': student_id,
         'checkInDate': th_time.strftime('%Y-%m-%d'),
-        'checkInTime': firestore.SERVER_TIMESTAMP,
+        'checkInTime': th_time,  # บันทึกเป็น datetime object
         'checkInTimeStr': th_time.strftime('%H:%M น.'),  # เก็บเวลาเป็น string สำหรับแสดงผล
         'remainingAfter': new_remaining
     }
@@ -419,7 +425,8 @@ def add_classes(student_id):
     new_remaining = old_remaining + amount
     student_ref.update({'remainingClasses': new_remaining})
 
-    # บันทึก Log การเพิ่มครั้งเรียน
+    # บันทึก Log การเพิ่มครั้งเรียน (ใช้เวลาไทย)
+    th_time = datetime.now(TH_TZ)
     log_data = {
         'studentId': student_id,
         'type': 'add_classes',
@@ -427,7 +434,8 @@ def add_classes(student_id):
         'newValue': new_remaining,
         'changeAmount': amount,
         'performedBy': current_user.username,
-        'timestamp': firestore.SERVER_TIMESTAMP,
+        'timestamp': th_time,  # บันทึกเป็น datetime object
+        'timestampStr': th_time.strftime('%d/%m/%Y %H:%M น.'),
         'note': f'เพิ่มครั้งเรียน {amount} ครั้ง'
     }
     db.collection('class_logs').add(log_data)
@@ -570,7 +578,8 @@ def edit_classes(student_id):
     old_remaining = student['remainingClasses']
     student_ref.update({'remainingClasses': new_amount})
 
-    # บันทึก Log การแก้ไขครั้งเรียน
+    # บันทึก Log การแก้ไขครั้งเรียน (ใช้เวลาไทย)
+    th_time = datetime.now(TH_TZ)
     log_data = {
         'studentId': student_id,
         'type': 'edit_classes',
@@ -578,7 +587,8 @@ def edit_classes(student_id):
         'newValue': new_amount,
         'changeAmount': new_amount - old_remaining,
         'performedBy': current_user.username,
-        'timestamp': firestore.SERVER_TIMESTAMP,
+        'timestamp': th_time,  # บันทึกเป็น datetime object
+        'timestampStr': th_time.strftime('%d/%m/%Y %H:%M น.'),
         'reason': reason,
         'note': f'แก้ไขจำนวนครั้งเรียนจาก {old_remaining} เป็น {new_amount} ครั้ง'
     }

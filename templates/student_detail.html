@@ -196,14 +196,18 @@
                                 <tbody>
                                     {% for record in attendance %}
                                     <tr>
-                                        <td>{{ record.checkInDate }}</td>
                                         <td>
-                                            {% if record.checkInTime %}
-                                                {% if record.checkInTime.__class__.__name__ == 'DatetimeWithNanoseconds' %}
-                                                    {{ record.checkInTime.strftime('%H:%M น.') }}
-                                                {% else %}
-                                                    {{ record.checkInTime }}
-                                                {% endif %}
+                                            {% if record.checkInDateThai %}
+                                                {{ record.checkInDateThai }}
+                                            {% else %}
+                                                {{ record.checkInDate|thai_date }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.checkInTimeStr %}
+                                                {{ record.checkInTimeStr }}
+                                            {% elif record.checkInTime %}
+                                                {{ record.checkInTime|thai_time }}
                                             {% else %}
                                                 -
                                             {% endif %}
@@ -301,12 +305,10 @@
                                         {% for log in class_logs %}
                                         <tr>
                                             <td>
-                                                {% if log.timestamp %}
-                                                    {% if log.timestamp.__class__.__name__ == 'DatetimeWithNanoseconds' %}
-                                                        {{ log.timestamp.strftime('%d/%m/%Y %H:%M') }}
-                                                    {% else %}
-                                                        {{ log.timestamp }}
-                                                    {% endif %}
+                                                {% if log.timestampStr %}
+                                                    {{ log.timestampStr }}
+                                                {% elif log.timestamp %}
+                                                    {{ log.timestamp|thai_datetime }}
                                                 {% else %}
                                                     -
                                                 {% endif %}
