@@ -1,0 +1,34 @@
+steps:
+  # Build and push container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/basketball-academy', '.']
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/basketball-academy']
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'basketball-academy'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/basketball-academy'
+      - '--region'
+      - 'asia-southeast1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '512Mi'
+      - '--max-instances'
+      - '10'
+
+# Store images in Google Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/basketball-academy'
+
+# Build timeout
+timeout: '1200s'
