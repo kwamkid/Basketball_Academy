@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}เพิ่มนักเรียน - Basketball Academy{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+        <i class="fas fa-user-plus text-success"></i>
+        <span>เพิ่มนักเรียนใหม่</span>
+    </h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-lg-8">
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('add_student') }}">
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">ชื่อนักเรียน <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control" required
+                                   placeholder="เช่น น้องบาส">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">วันเกิด <span class="text-danger">*</span></label>
+                            <input type="date" name="birthDate" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">โรงเรียน <span class="text-danger">*</span></label>
+                        <input type="text" name="school" class="form-control" required
+                               placeholder="เช่น โรงเรียนอนุบาลกรุงเทพ">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">ผู้ปกครอง <span class="text-danger">*</span></label>
+                        <select name="parentId" class="form-select" required>
+                            <option value="">-- เลือกผู้ปกครอง --</option>
+                            {% for parent in parents %}
+                            <option value="{{ parent.id }}">{{ parent.name }} ({{ parent.phone }})</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">
+                            หากยังไม่มีผู้ปกครอง <a href="{{ url_for('parents') }}" class="text-decoration-none">คลิกเพิ่มผู้ปกครอง</a>
+                        </small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">จำนวนครั้งเริ่มต้น <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" name="remainingClasses" class="form-control"
+                                   value="12" min="0" required>
+                            <span class="input-group-text">ครั้ง</span>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> ปกติ 1 คอร์ส = 12 ครั้ง (3,500 บาท)
+                        </small>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> บันทึกข้อมูล
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> ยกเลิก
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- คำแนะนำ -->
+    <div class="col-12 col-lg-4">
+        <div class="card bg-light border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-semibold">
+                    <i class="fas fa-lightbulb text-warning"></i> คำแนะนำ
+                </h5>
+                <ul class="ps-3 mb-0">
+                    <li class="mb-2">กรอกข้อมูลให้ครบทุกช่อง</li>
+                    <li class="mb-2">หากยังไม่มีผู้ปกครองในระบบ ให้เพิ่มผู้ปกครองก่อน</li>
+                    <li class="mb-2">จำนวนครั้งเริ่มต้นสามารถแก้ไขได้ภายหลัง</li>
+                    <li>1 คอร์สมาตรฐาน = 12 ครั้ง</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

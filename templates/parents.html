@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}ผู้ปกครอง - Basketball Academy{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+        <i class="fas fa-users text-info"></i>
+        <span>รายชื่อผู้ปกครอง</span>
+    </h1>
+</div>
+
+<!-- ฟอร์มเพิ่มผู้ปกครอง -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0 fw-semibold"><i class="fas fa-user-plus"></i> เพิ่มผู้ปกครอง</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('add_parent') }}" class="row g-3">
+            <div class="col-12 col-md-5">
+                <label class="form-label fw-medium">ชื่อผู้ปกครอง</label>
+                <input type="text" name="name" class="form-control" required
+                       placeholder="เช่น คุณสมชาย ใจดี">
+            </div>
+            <div class="col-12 col-md-5">
+                <label class="form-label fw-medium">เบอร์โทรศัพท์</label>
+                <input type="tel" name="phone" class="form-control" required
+                       placeholder="เช่น 0812345678" pattern="[0-9]{10}">
+            </div>
+            <div class="col-12 col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-save"></i> บันทึก
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Search Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-12 col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           id="parentSearchInput"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="ค้นหาชื่อผู้ปกครอง หรือเบอร์โทรศัพท์..."
+                           onkeyup="filterParents()">
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <button class="btn btn-outline-secondary w-100" onclick="clearParentFilters()">
+                    <i class="fas fa-times"></i> ล้างการค้นหา
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ตารางผู้ปกครอง -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="parentsTable">
+                <thead>
+                    <tr>
+                        <th>ชื่อผู้ปกครอง</th>
+                        <th>เบอร์โทรศัพท์</th>
+                        <th class="d-none d-sm-table-cell">จำนวนบุตรหลาน</th>
+                        <th class="text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for parent in parents %}
+                    <tr class="parent-row"
+                        data-parent-name="{{ parent.name.lower() }}"
+                        data-parent-phone="{{ parent.phone }}">
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-sm rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-center p-2">
+                                    <i class="fas fa-user-tie text-info"></i>
+                                </div>
+                                <span class="fw-medium">{{ parent.name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="tel:{{ parent.phone }}" class="text-decoration-none text-muted">
+                                <i class="fas fa-phone-alt text-success me-1"></i>
+                                {{ parent.phone }}
+                            </a>
+                        </td>
+                        <td class="d-none d-sm-table-cell">
+                            <span class="badge bg-secondary">0 คน</span>
+                            <!-- TODO: นับจำนวนนักเรียนที่ผูกกับผู้ปกครองคนนี้ -->
+                        </td>
+                        <td class="text-center">
+                            <a href="{{ url_for('edit_parent', parent_id=parent.id) }}"
+                               class="btn btn-sm btn-outline-primary" title="แก้ไข">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('delete_parent', parent_id=parent.id) }}"
+                                  class="d-inline"
+                                  onsubmit="return confirm('ยืนยันการลบผู้ปกครอง {{ parent.name }}?\n\n⚠️ คำเตือน: สามารถลบได้เฉพาะผู้ปกครองที่ไม่มีนักเรียนผูกอยู่')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="ลบ">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr id="emptyRow">
+                        <td colspan="4" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fas fa-users fa-3x mb-3 d-block opacity-25"></i>
+                                <p class="mb-0">ยังไม่มีข้อมูลผู้ปกครอง</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Results Counter -->
+        <div class="px-3 py-2 bg-light border-top" id="parentResultsCounter" style="display: none;">
+            <small class="text-muted">
+                แสดง <span id="parentVisibleCount">0</span> จากทั้งหมด <span id="parentTotalCount">{{ parents|length }}</span> รายการ
+            </small>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterParents() {
+    const searchText = document.getElementById('parentSearchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('.parent-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const parentName = row.dataset.parentName;
+        const parentPhone = row.dataset.parentPhone;
+
+        // Text search
+        const matchesSearch = searchText === '' ||
+                            parentName.includes(searchText) ||
+                            parentPhone.includes(searchText);
+
+        if (matchesSearch) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Update counter
+    const counter = document.getElementById('parentResultsCounter');
+    const visibleSpan = document.getElementById('parentVisibleCount');
+
+    if (searchText) {
+        counter.style.display = 'block';
+        visibleSpan.textContent = visibleCount;
+    } else {
+        counter.style.display = 'none';
+    }
+
+    // Show no results message
+    const tbody = document.querySelector('#parentsTable tbody');
+    let noResultsRow = document.getElementById('parentNoResultsRow');
+    const emptyRow = document.getElementById('emptyRow');
+
+    if (visibleCount === 0 && rows.length > 0) {
+        if (emptyRow) emptyRow.style.display = 'none';
+
+        if (!noResultsRow) {
+            noResultsRow = document.createElement('tr');
+            noResultsRow.id = 'parentNoResultsRow';
+            noResultsRow.innerHTML = `
+                <td colspan="4" class="text-center py-4 text-muted">
+                    <i class="fas fa-search fa-2x mb-2 d-block opacity-50"></i>
+                    ไม่พบข้อมูลที่ค้นหา
+                </td>
+            `;
+            tbody.appendChild(noResultsRow);
+        }
+        noResultsRow.style.display = '';
+    } else if (noResultsRow) {
+        noResultsRow.style.display = 'none';
+        if (emptyRow && rows.length === 0) emptyRow.style.display = '';
+    }
+}
+
+function clearParentFilters() {
+    document.getElementById('parentSearchInput').value = '';
+    filterParents();
+}
+
+// Auto-focus search on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('parentSearchInput');
+    if (searchInput) {
+        searchInput.focus();
+    }
+});
+
+// Search on Enter key
+document.getElementById('parentSearchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        filterParents();
+    }
+});
+</script>
+{% endblock %}

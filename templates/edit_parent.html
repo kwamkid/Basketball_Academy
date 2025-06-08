@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}แก้ไขผู้ปกครอง - Basketball Academy{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">หน้าหลัก</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('parents') }}" class="text-decoration-none">ผู้ปกครอง</a></li>
+        <li class="breadcrumb-item active">แก้ไขข้อมูล</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+        <i class="fas fa-user-edit text-warning"></i>
+        <span>แก้ไขข้อมูลผู้ปกครอง</span>
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('edit_parent', parent_id=parent.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">ชื่อผู้ปกครอง <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" required
+                               value="{{ parent.name }}"
+                               placeholder="เช่น คุณสมชาย ใจดี">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">เบอร์โทรศัพท์ <span class="text-danger">*</span></label>
+                        <input type="tel" name="phone" class="form-control" required
+                               value="{{ parent.phone }}"
+                               placeholder="เช่น 0812345678"
+                               pattern="[0-9]{10}">
+                        <small class="text-muted">กรอกเบอร์ 10 หลัก ไม่ต้องใส่ขีด</small>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save"></i> บันทึกการแก้ไข
+                        </button>
+                        <a href="{{ url_for('parents') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> ยกเลิก
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ข้อมูลนักเรียนที่เกี่ยวข้อง -->
+    <div class="col-12 col-lg-6">
+        <div class="card bg-light border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-semibold">
+                    <i class="fas fa-info-circle text-info"></i> ข้อมูลที่เกี่ยวข้อง
+                </h5>
+                <p class="text-muted mb-3">ผู้ปกครองคนนี้มีบุตรหลานในระบบ:</p>
+
+                <!-- TODO: แสดงรายชื่อนักเรียนที่ผูกกับผู้ปกครองคนนี้ -->
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-lightbulb"></i>
+                    หากต้องการเปลี่ยนผู้ปกครองของนักเรียน กรุณาไปแก้ไขในหน้าข้อมูลนักเรียน
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
