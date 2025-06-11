@@ -20,7 +20,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('process_import') }}" enctype="multipart/form-data" onsubmit="return confirmImport()">
+                <form method="POST" action="{{ url_for('admin.process_import') }}" enctype="multipart/form-data" onsubmit="return confirmImport()">
                     <div class="mb-4">
                         <label class="form-label fw-medium">เลือกไฟล์ Excel หรือ CSV</label>
                         <input type="file" name="file" class="form-control" required accept=".xlsx,.xls,.csv">
@@ -57,7 +57,7 @@
                     <li class="mb-3">
                         <strong>ดาวน์โหลด Template:</strong>
                         <div class="mt-2">
-                            <a href="{{ url_for('download_template') }}" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ url_for('admin.download_template') }}" class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-download"></i> ดาวน์โหลด Template Excel
                             </a>
                         </div>

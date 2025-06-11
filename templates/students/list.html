@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}หน้าหลัก - Basketball Academy{% endblock %}
+{% block title %}รายชื่อนักเรียน - Basketball Academy{% endblock %}
 
 {% block content %}
 <!-- Header Section -->
@@ -9,7 +9,7 @@
         <i class="fas fa-users text-primary"></i>
         <span>รายชื่อนักเรียน</span>
     </h1>
-    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+    <a href="{{ url_for('students.add') }}" class="btn btn-primary">
         <i class="fas fa-plus"></i>
         <span class="d-none d-sm-inline">เพิ่มนักเรียนใหม่</span>
     </a>
@@ -87,7 +87,7 @@
                         data-parent-name="{{ student.parent.name.lower() if student.parent else '' }}"
                         data-remaining="{{ student.remainingClasses }}">
                         <td>
-                            <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                            <a href="{{ url_for('students.detail', student_id=student.id) }}"
                                class="text-decoration-none d-flex align-items-center gap-2">
                                 <div>
                                     <span class="fw-medium">{{ student.firstName }} {{ student.lastName }}</span>
@@ -124,15 +124,15 @@
                         </td>
                         <td class="text-center">
                             <div class="d-flex gap-2 justify-content-center">
-                                <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                <a href="{{ url_for('students.detail', student_id=student.id) }}"
                                    class="btn btn-sm btn-outline-primary" title="ดูรายละเอียด">
                                     <i class="fas fa-eye"></i>
                                     <span class="d-none d-lg-inline">ดู</span>
                                 </a>
                                 {% if student.remainingClasses > 0 %}
-                                <form method="POST" action="{{ url_for('checkin', student_id=student.id) }}"
+                                <form method="POST" action="{{ url_for('students.checkin', student_id=student.id) }}"
                                       class="d-inline"
-                                      onsubmit="return confirm('ยืนยันการเช็คอิน {{ student.name }}?')">
+                                      onsubmit="return confirm('ยืนยันการเช็คอิน {{ student.firstName }} {{ student.lastName }}?')">
                                     <button type="submit" class="btn btn-sm btn-success" title="เช็คอิน">
                                         <i class="fas fa-check"></i>
                                         <span class="d-none d-lg-inline">เช็คอิน</span>
@@ -148,7 +148,7 @@
                             <div class="text-muted">
                                 <i class="fas fa-basketball-ball fa-3x mb-3 d-block opacity-25"></i>
                                 <p class="mb-0">ยังไม่มีข้อมูลนักเรียน</p>
-                                <a href="{{ url_for('add_student') }}" class="btn btn-primary mt-3">
+                                <a href="{{ url_for('students.add') }}" class="btn btn-primary mt-3">
                                     <i class="fas fa-plus"></i> เพิ่มนักเรียนคนแรก
                                 </a>
                             </div>

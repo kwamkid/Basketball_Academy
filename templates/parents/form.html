@@ -6,8 +6,8 @@
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb mb-0">
-        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="{{ url_for('parents') }}" class="text-decoration-none">ผู้ปกครอง</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-decoration-none">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('parents.list') }}" class="text-decoration-none">ผู้ปกครอง</a></li>
         <li class="breadcrumb-item active">{{ 'แก้ไขข้อมูล' if parent else 'เพิ่มผู้ปกครอง' }}</li>
     </ol>
 </nav>
@@ -71,7 +71,7 @@
                         <button type="submit" class="btn btn-{{ 'warning' if parent else 'info' }}">
                             <i class="fas fa-save"></i> {{ 'บันทึกการแก้ไข' if parent else 'บันทึกข้อมูล' }}
                         </button>
-                        <a href="{{ url_for('parents') }}" class="btn btn-secondary">
+                        <a href="{{ url_for('parents.list') }}" class="btn btn-secondary">
                             <i class="fas fa-times"></i> ยกเลิก
                         </a>
                     </div>
@@ -94,7 +94,7 @@
                         <ul class="list-unstyled">
                             {% for student in students %}
                             <li class="mb-2">
-                                <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                <a href="{{ url_for('students.detail', student_id=student.id) }}"
                                    class="text-decoration-none">
                                     <i class="fas fa-user text-primary"></i>
                                     {{ student.firstName }} {{ student.lastName }} ({{ student.nickname }})

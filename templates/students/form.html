@@ -6,9 +6,10 @@
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb mb-0">
-        <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">หน้าหลัก</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-decoration-none">หน้าหลัก</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('students.list') }}" class="text-decoration-none">นักเรียน</a></li>
         {% if student %}
-        <li class="breadcrumb-item"><a href="{{ url_for('student_detail', student_id=student.id) }}" class="text-decoration-none">{{ student.firstName }} {{ student.lastName }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('students.detail', student_id=student.id) }}" class="text-decoration-none">{{ student.firstName }} {{ student.lastName }}</a></li>
         {% endif %}
         <li class="breadcrumb-item active">{{ 'แก้ไขข้อมูล' if student else 'เพิ่มนักเรียน' }}</li>
     </ol>
@@ -133,7 +134,7 @@
                             {% endfor %}
                         </select>
                         <small class="text-muted">
-                            หากยังไม่มีผู้ปกครอง <a href="{{ url_for('add_parent') }}" target="_blank" class="text-decoration-none">คลิกเพิ่มผู้ปกครอง</a>
+                            หากยังไม่มีผู้ปกครอง <a href="{{ url_for('parents.add') }}" target="_blank" class="text-decoration-none">คลิกเพิ่มผู้ปกครอง</a>
                         </small>
                     </div>
                 </div>
@@ -166,7 +167,7 @@
                 <button type="submit" class="btn btn-{{ 'warning' if student else 'success' }}">
                     <i class="fas fa-save"></i> {{ 'บันทึกการแก้ไข' if student else 'บันทึกข้อมูล' }}
                 </button>
-                <a href="{{ url_for('student_detail', student_id=student.id) if student else url_for('index') }}"
+                <a href="{{ url_for('students.detail', student_id=student.id) if student else url_for('students.list') }}"
                    class="btn btn-secondary">
                     <i class="fas fa-times"></i> ยกเลิก
                 </a>

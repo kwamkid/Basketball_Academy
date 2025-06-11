@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Basketball Academy{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+        <i class="fas fa-home text-primary"></i>
+        <span>ภาพรวมระบบ</span>
+    </h1>
+</div>
+
+<!-- Quick Stats -->
+<div class="row g-4 mb-4">
+    <!-- Total Students -->
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-primary bg-opacity-10 me-3">
+                        <i class="fas fa-user-graduate fa-2x text-primary"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">นักเรียนทั้งหมด</h6>
+                        <h3 class="mb-0">{{ total_students }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Students -->
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-success bg-opacity-10 me-3">
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">มีครั้งเรียนเหลือ</h6>
+                        <h3 class="mb-0">{{ active_students }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today Check-ins -->
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-info bg-opacity-10 me-3">
+                        <i class="fas fa-calendar-check fa-2x text-info"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">เช็คอินวันนี้</h6>
+                        <h3 class="mb-0">{{ today_checkins }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Parents -->
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle p-3 bg-warning bg-opacity-10 me-3">
+                        <i class="fas fa-users fa-2x text-warning"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">ผู้ปกครอง</h6>
+                        <h3 class="mb-0">{{ total_parents }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0 fw-semibold"><i class="fas fa-bolt text-warning"></i> ทางลัด</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-12 col-md-4">
+                <a href="{{ url_for('students.add') }}" class="btn btn-success w-100 py-3">
+                    <i class="fas fa-user-plus fa-lg mb-2"></i>
+                    <br>เพิ่มนักเรียนใหม่
+                </a>
+            </div>
+            <div class="col-12 col-md-4">
+                <a href="{{ url_for('students.list') }}" class="btn btn-primary w-100 py-3">
+                    <i class="fas fa-check-circle fa-lg mb-2"></i>
+                    <br>เช็คอินนักเรียน
+                </a>
+            </div>
+            <div class="col-12 col-md-4">
+                <a href="{{ url_for('admin.import_data') }}" class="btn btn-info w-100 py-3">
+                    <i class="fas fa-file-import fa-lg mb-2"></i>
+                    <br>Import ข้อมูล
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <!-- Recent Check-ins -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-semibold"><i class="fas fa-clock text-primary"></i> เช็คอินล่าสุด</h5>
+                <a href="{{ url_for('students.list') }}" class="btn btn-sm btn-outline-primary">ดูทั้งหมด</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>นักเรียน</th>
+                                <th>เวลา</th>
+                                <th>คงเหลือ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for checkin in recent_checkins %}
+                            <tr>
+                                <td>{{ checkin.student_name }}</td>
+                                <td>{{ checkin.time }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if checkin.remaining > 5 else 'warning' if checkin.remaining > 0 else 'danger' }}">
+                                        {{ checkin.remaining }} ครั้ง
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">ยังไม่มีการเช็คอินวันนี้</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Running Low -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-semibold"><i class="fas fa-exclamation-triangle text-warning"></i> ครั้งเรียนใกล้หมด</h5>
+                <a href="{{ url_for('students.list') }}" class="btn btn-sm btn-outline-warning">ดูทั้งหมด</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>นักเรียน</th>
+                                <th>ผู้ปกครอง</th>
+                                <th>คงเหลือ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in low_classes_students %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('students.detail', student_id=student.id) }}" class="text-decoration-none">
+                                        {{ student.firstName }} {{ student.lastName }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if student.parent %}
+                                        <small>{{ student.parent.name }}</small>
+                                    {% else %}
+                                        <small class="text-muted">-</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if student.remainingClasses > 0 else 'danger' }}">
+                                        {{ student.remainingClasses }} ครั้ง
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">ไม่มีนักเรียนที่ครั้งเรียนใกล้หมด</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

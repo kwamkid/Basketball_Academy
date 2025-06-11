@@ -6,7 +6,8 @@
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb mb-0">
-<li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-decoration-none">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('students.list') }}" class="text-decoration-none">นักเรียน</a></li>
         <li class="breadcrumb-item active">{{ student.firstName }} {{ student.lastName }}</li>
     </ol>
 </nav>
@@ -17,7 +18,7 @@
         <div class="card mb-4">
             <div class="card-header border-0 bg-gradient-to-r from-primary to-secondary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-user"></i> ข้อมูลนักเรียน</h5>
-                <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-sm btn-light">
+                <a href="{{ url_for('students.edit', student_id=student.id) }}" class="btn btn-sm btn-light">
                     <i class="fas fa-edit"></i> แก้ไข
                 </a>
             </div>
@@ -34,7 +35,7 @@
                     </div>
                     <div class="d-flex justify-content-between align-items-center py-2">
                         <span class="text-muted">วันเกิด:</span>
-                        <span class="fw-medium">{{ student.birthDate }}</span>
+                        <span class="fw-medium">{{ student.birthDate|thai_date }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center py-2">
                         <span class="text-muted">เพศ:</span>
@@ -171,7 +172,7 @@
                     <div class="card-header border-0 d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-calendar-check text-info"></i> ประวัติการเช็คอิน</h5>
                         {% if student.remainingClasses > 0 %}
-                        <form method="POST" action="{{ url_for('checkin', student_id=student.id) }}"
+                        <form method="POST" action="{{ url_for('students.checkin', student_id=student.id) }}"
                               onsubmit="return confirm('ยืนยันการเช็คอิน?')">
                             <button type="submit" class="btn btn-sm btn-success">
                                 <i class="fas fa-check"></i> เช็คอินวันนี้
@@ -213,7 +214,7 @@
                                             <span class="badge bg-secondary">{{ record.remainingAfter }} ครั้ง</span>
                                         </td>
                                         <td class="text-center">
-                                            <form method="POST" action="{{ url_for('cancel_checkin', attendance_id=record.id) }}"
+                                            <form method="POST" action="{{ url_for('students.cancel_checkin', attendance_id=record.id) }}"
                                                   class="d-inline"
                                                   onsubmit="return confirm('ยืนยันการยกเลิกเช็คอิน?\n(จะคืน 1 ครั้งให้นักเรียน)')">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="ยกเลิกเช็คอิน">
@@ -247,7 +248,7 @@
                                 <ul class="pagination pagination-sm mb-0">
                                     <!-- Previous -->
                                     <li class="page-item {% if page == 1 %}disabled{% endif %}">
-                                        <a class="page-link" href="{{ url_for('student_detail', student_id=student.id, page=page-1) }}">
+                                        <a class="page-link" href="{{ url_for('students.detail', student_id=student.id, page=page-1) }}">
                                             <i class="fas fa-chevron-left"></i>
                                         </a>
                                     </li>
@@ -256,7 +257,7 @@
                                     {% for p in range(1, total_pages + 1) %}
                                         {% if p == 1 or p == total_pages or (p >= page-2 and p <= page+2) %}
                                             <li class="page-item {% if p == page %}active{% endif %}">
-                                                <a class="page-link" href="{{ url_for('student_detail', student_id=student.id, page=p) }}">{{ p }}</a>
+                                                <a class="page-link" href="{{ url_for('students.detail', student_id=student.id, page=p) }}">{{ p }}</a>
                                             </li>
                                         {% elif p == page-3 or p == page+3 %}
                                             <li class="page-item disabled">
@@ -267,7 +268,7 @@
 
                                     <!-- Next -->
                                     <li class="page-item {% if page == total_pages %}disabled{% endif %}">
-                                        <a class="page-link" href="{{ url_for('student_detail', student_id=student.id, page=page+1) }}">
+                                        <a class="page-link" href="{{ url_for('students.detail', student_id=student.id, page=page+1) }}">
                                             <i class="fas fa-chevron-right"></i>
                                         </a>
                                     </li>
@@ -363,7 +364,7 @@
                 <h5 class="modal-title"><i class="fas fa-plus text-success"></i> เพิ่มครั้งเรียน</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('add_classes', student_id=student.id) }}">
+            <form method="POST" action="{{ url_for('students.add_classes', student_id=student.id) }}">
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i> เติมคอร์สใหม่
@@ -433,7 +434,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('edit_classes', student_id=student.id) }}">
+            <form method="POST" action="{{ url_for('students.edit_classes', student_id=student.id) }}">
                 <div class="modal-body">
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i>

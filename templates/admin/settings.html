@@ -35,7 +35,7 @@
                 <h5 class="mb-0 fw-semibold"><i class="fas fa-key text-warning"></i> เปลี่ยนรหัสผ่าน</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('change_password') }}" onsubmit="return validatePassword()">
+                <form method="POST" action="{{ url_for('admin.change_password') }}" onsubmit="return validatePassword()">
                     <div class="mb-3">
                         <label class="form-label fw-medium">รหัสผ่านเดิม</label>
                         <input type="password" name="old_password" class="form-control" required>
