@@ -54,6 +54,7 @@
                     <option value="available">มีครั้งเรียนเหลือ</option>
                     <option value="warning">ใกล้หมด (≤ 5 ครั้ง)</option>
                     <option value="empty">หมดแล้ว</option>
+                    <option value="today">เช็คอินวันนี้</option>
                 </select>
             </div>
             <div class="col-12 col-md-3">
@@ -85,7 +86,8 @@
                     <tr class="student-row"
                         data-student-name="{{ (student.firstName + ' ' + student.lastName + ' ' + student.nickname).lower() }}"
                         data-parent-name="{{ student.parent.name.lower() if student.parent else '' }}"
-                        data-remaining="{{ student.remainingClasses }}">
+                        data-remaining="{{ student.remainingClasses }}"
+                        data-checkin-today="{{ 'yes' if student.checked_in_today else 'no' }}">
                         <td>
                             <a href="{{ url_for('students.detail', student_id=student.id) }}"
                                class="text-decoration-none d-flex align-items-center gap-2">
@@ -113,7 +115,7 @@
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td class="text-center">
+                       <td class="text-center">
                             {% if student.remainingClasses > 5 %}
                                 <span class="badge bg-success">{{ student.remainingClasses }} ครั้ง</span>
                             {% elif student.remainingClasses > 0 %}
@@ -121,8 +123,13 @@
                             {% else %}
                                 <span class="badge bg-danger">หมด</span>
                             {% endif %}
+                            {% if student.checkin_count_today > 0 %}
+                                <span class="badge bg-info ms-1" title="เช็คอินวันนี้แล้ว {{ student.checkin_count_today }} ครั้ง">
+                                    <i class="fas fa-check"></i> {{ student.checkin_count_today }}
+                                </span>
+                            {% endif %}
                         </td>
-                        <td class="text-center">
+                       <td class="text-center">
                             <div class="d-flex gap-2 justify-content-center">
                                 <a href="{{ url_for('students.detail', student_id=student.id) }}"
                                    class="btn btn-sm btn-outline-primary" title="ดูรายละเอียด">
@@ -132,7 +139,7 @@
                                 {% if student.remainingClasses > 0 %}
                                 <form method="POST" action="{{ url_for('students.checkin', student_id=student.id) }}"
                                       class="d-inline"
-                                      onsubmit="return confirm('ยืนยันการเช็คอิน {{ student.firstName }} {{ student.lastName }}?')">
+                                      onsubmit="return confirmCheckin('{{ student.firstName }} {{ student.lastName }}', {{ 'true' if student.checked_in_today else 'false' }})">
                                     <button type="submit" class="btn btn-sm btn-success" title="เช็คอิน">
                                         <i class="fas fa-check"></i>
                                         <span class="d-none d-lg-inline">เช็คอิน</span>
@@ -174,6 +181,33 @@
 </div>
 
 <script>
+// Get filter from URL parameter
+const urlParams = new URLSearchParams(window.location.search);
+const filterParam = urlParams.get('filter');
+
+// Apply filter on page load
+window.addEventListener('DOMContentLoaded', function() {
+    if (filterParam) {
+        const classFilter = document.getElementById('classFilter');
+        if (filterParam === 'today') {
+            classFilter.value = 'today';
+        } else if (filterParam === 'warning') {
+            classFilter.value = 'warning';
+        }
+        filterStudents();
+    }
+    document.getElementById('searchInput').focus();
+});
+
+// Confirm function with check for already checked in
+function confirmCheckin(studentName, alreadyCheckedIn) {
+    if (alreadyCheckedIn) {
+        return confirm(`⚠️ ${studentName} ได้เช็คอินวันนี้แล้ว!\n\nต้องการเช็คอินอีกครั้งใช่หรือไม่?\n(กรณีเรียน 2 คลาสในวันเดียวกัน)`);
+    } else {
+        return confirm(`ยืนยันการเช็คอิน ${studentName}?`);
+    }
+}
+
 function filterStudents() {
     const searchText = document.getElementById('searchInput').value.toLowerCase();
     const classFilter = document.getElementById('classFilter').value;
@@ -184,6 +218,7 @@ function filterStudents() {
         const studentName = row.dataset.studentName;
         const parentName = row.dataset.parentName;
         const remaining = parseInt(row.dataset.remaining);
+        const checkedInToday = row.dataset.checkinToday;
 
         // Text search
         const matchesSearch = searchText === '' ||
@@ -198,6 +233,8 @@ function filterStudents() {
             matchesFilter = remaining > 0 && remaining <= 5;
         } else if (classFilter === 'empty') {
             matchesFilter = remaining === 0;
+        } else if (classFilter === 'today') {
+            matchesFilter = checkedInToday === 'yes';
         }
 
         if (matchesSearch && matchesFilter) {
@@ -244,12 +281,9 @@ function filterStudents() {
 function clearFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('classFilter').value = '';
+    // Clear URL parameter
+    window.history.replaceState({}, document.title, window.location.pathname);
     filterStudents();
 }
-
-// Auto-focus search on page load
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('searchInput').focus();
-});
 </script>
 {% endblock %}

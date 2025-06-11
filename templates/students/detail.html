@@ -6,7 +6,7 @@
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb mb-0">
-        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-decoration-none">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}" class="text-decoration-none">Dashboard</a></li>
         <li class="breadcrumb-item"><a href="{{ url_for('students.list') }}" class="text-decoration-none">นักเรียน</a></li>
         <li class="breadcrumb-item active">{{ student.firstName }} {{ student.lastName }}</li>
     </ol>
@@ -169,13 +169,17 @@
             <!-- Attendance Tab -->
             <div class="tab-pane fade show active" id="attendance-tab">
                 <div class="card">
-                    <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                   <div class="card-header border-0 d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-calendar-check text-info"></i> ประวัติการเช็คอิน</h5>
                         {% if student.remainingClasses > 0 %}
+                        {% set today_count = attendance|selectattr('checkInDate', 'equalto', today_date)|list|length %}
                         <form method="POST" action="{{ url_for('students.checkin', student_id=student.id) }}"
-                              onsubmit="return confirm('ยืนยันการเช็คอิน?')">
+                              onsubmit="return confirmDetailCheckin({{ today_count }})">
                             <button type="submit" class="btn btn-sm btn-success">
                                 <i class="fas fa-check"></i> เช็คอินวันนี้
+                                {% if today_count > 0 %}
+                                    <span class="badge bg-white text-success ms-1">{{ today_count }}</span>
+                                {% endif %}
                             </button>
                         </form>
                         {% endif %}
@@ -478,6 +482,13 @@ function updateAmount(value) {
         document.getElementById('amountInput').value = value;
         document.getElementById('afterAdd').textContent = {{ student.remainingClasses }} + parseInt(value);
     }
+}
+
+function confirmDetailCheckin(todayCount) {
+    if (todayCount > 0) {
+        return confirm(`⚠️ มีการเช็คอินวันนี้แล้ว ${todayCount} ครั้ง!\n\nต้องการเช็คอินอีกครั้งใช่หรือไม่?\n(กรณีเรียน 2 คลาสในวันเดียวกัน)`);
+    }
+    return confirm('ยืนยันการเช็คอิน?');
 }
 
 function toggleCustomAmount() {

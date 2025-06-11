@@ -19,8 +19,25 @@ def list():
     students = []
     students_ref = db.collection('students').stream()
 
+    # Get today's date for checking
+    today = datetime.now(Config.TIMEZONE).strftime('%Y-%m-%d')
+
     for doc in students_ref:
         student = get_student_with_parent(db, doc)
+
+        # Count how many times student checked in today
+        attendance_today = db.collection('attendance') \
+            .where('studentId', '==', student['id']) \
+            .where('checkInDate', '==', today) \
+            .stream()
+
+        checkin_count = 0
+        for _ in attendance_today:
+            checkin_count += 1
+
+        student['checked_in_today'] = checkin_count > 0
+        student['checkin_count_today'] = checkin_count
+
         students.append(student)
 
     return render_template('students/list.html', students=students)
@@ -107,13 +124,16 @@ def detail(student_id):
     except:
         pass
 
+    today_date = datetime.now(Config.TIMEZONE).strftime('%Y-%m-%d')
+
     return render_template('students/detail.html',
                            student=student,
                            attendance=attendance,
                            class_logs=class_logs,
                            page=page,
                            total_pages=total_pages,
-                           total_attendance=total_attendance)
+                           total_attendance=total_attendance,
+                           today_date=today_date)  # เพิ่มบรรทัดนี้
 
 
 @students_bp.route('/<student_id>/edit', methods=['GET', 'POST'])
@@ -235,10 +255,10 @@ def edit_classes(student_id):
 @students_bp.route('/attendance/<attendance_id>/cancel', methods=['POST'])
 @login_required
 def cancel_checkin(attendance_id):
-    """Cancel a check-in"""
+    """Cancel a check-in and recalculate all remaining values"""
     from app import db
 
-    # Get attendance record
+    # Get attendance record to cancel
     attendance_doc = db.collection('attendance').document(attendance_id).get()
 
     if not attendance_doc.exists:
@@ -254,15 +274,67 @@ def cancel_checkin(attendance_id):
         flash('ไม่สามารถยกเลิกการเช็คอินย้อนหลังได้ ยกเลิกได้เฉพาะเช็คอินวันนี้เท่านั้น', 'warning')
         return redirect(url_for('students.detail', student_id=student_id))
 
-    # Return the class to student
+    # Get student data
     student_ref = db.collection('students').document(student_id)
     student = student_ref.get().to_dict()
+    old_remaining = student['remainingClasses']
 
-    new_remaining = student['remainingClasses'] + 1
+    # Return one class to student
+    new_remaining = old_remaining + 1
     student_ref.update({'remainingClasses': new_remaining})
 
-    # Delete attendance record
+    # Delete the cancelled attendance record
     db.collection('attendance').document(attendance_id).delete()
+
+    # IMPORTANT: Recalculate all remaining attendance records
+    # Get all remaining attendance records for this student
+    all_attendance = []
+    attendance_ref = db.collection('attendance').where('studentId', '==', student_id).stream()
+
+    for doc in attendance_ref:
+        record = doc.to_dict()
+        record['doc_id'] = doc.id
+        all_attendance.append(record)
+
+    # Sort by check-in time (oldest first)
+    all_attendance.sort(key=lambda x: x.get('checkInTime', ''))
+
+    # Calculate initial classes
+    total_checkins = len(all_attendance)
+    initial_classes = total_checkins + new_remaining
+
+    # Round up to courses (1 course = 8 classes)
+    courses = ((initial_classes - 1) // 8) + 1
+    adjusted_initial = courses * 8
+
+    # Make sure it's at least the actual total
+    if adjusted_initial < initial_classes:
+        adjusted_initial = initial_classes
+
+    # Update all remaining attendance records with correct remainingAfter values
+    for i, record in enumerate(all_attendance):
+        # Calculate remaining after this check-in
+        remaining_after = adjusted_initial - (i + 1)
+
+        # Update if different from current value
+        if record.get('remainingAfter') != remaining_after:
+            db.collection('attendance').document(record['doc_id']).update({
+                'remainingAfter': remaining_after
+            })
+
+    # Log the cancellation
+    log_data = {
+        'studentId': student_id,
+        'type': 'cancel_checkin',
+        'oldValue': old_remaining,
+        'newValue': new_remaining,
+        'changeAmount': 1,
+        'performedBy': current_user.username,
+        'timestamp': datetime.now(Config.TIMEZONE),
+        'timestampStr': datetime.now(Config.TIMEZONE).strftime('%d/%m/%Y %H:%M น.'),
+        'note': f'ยกเลิกการเช็คอินวันที่ {attendance["checkInDate"]} เวลา {attendance.get("checkInTimeStr", "")}'
+    }
+    db.collection('class_logs').add(log_data)
 
     flash(f'ยกเลิกการเช็คอินสำเร็จ! คืนครั้งเรียนแล้ว (ปัจจุบันมี {new_remaining} ครั้ง)', 'success')
     return redirect(url_for('students.detail', student_id=student_id))

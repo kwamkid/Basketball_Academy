@@ -6,7 +6,7 @@
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb mb-0">
-        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-decoration-none">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}" class="text-decoration-none">Dashboard</a></li>
         <li class="breadcrumb-item"><a href="{{ url_for('parents.list') }}" class="text-decoration-none">ผู้ปกครอง</a></li>
         <li class="breadcrumb-item active">{{ 'แก้ไขข้อมูล' if parent else 'เพิ่มผู้ปกครอง' }}</li>
     </ol>

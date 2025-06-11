@@ -30,14 +30,37 @@ def dashboard():
     for doc in parents_ref:
         total_parents += 1
 
-    # Count today's check-ins
+    # Count today's check-ins and get recent checkins
     today = datetime.now(Config.TIMEZONE).strftime('%Y-%m-%d')
     today_checkins = 0
     recent_checkins = []
 
+    # Get all today's check-ins
     attendance_ref = db.collection('attendance').where('checkInDate', '==', today).stream()
+    attendance_list = []
+
     for doc in attendance_ref:
         today_checkins += 1
+        attendance = doc.to_dict()
+        attendance['id'] = doc.id
+        attendance_list.append(attendance)
+
+    # Sort by check-in time (latest first) and get top 5
+    attendance_list.sort(key=lambda x: x.get('checkInTime', ''), reverse=True)
+
+    # Get student details for recent check-ins
+    for attendance in attendance_list[:5]:  # Get only top 5
+        student_id = attendance.get('studentId')
+        if student_id:
+            student_doc = db.collection('students').document(student_id).get()
+            if student_doc.exists:
+                student = student_doc.to_dict()
+                recent_checkins.append({
+                    'student_name': f"{student.get('firstName', '')} {student.get('lastName', '')}",
+                    'nickname': student.get('nickname', ''),
+                    'time': attendance.get('checkInTimeStr', attendance.get('checkInTime', '')),
+                    'remaining': attendance.get('remainingAfter', 0)
+                })
 
     # Find students with low remaining classes
     low_classes_students = []

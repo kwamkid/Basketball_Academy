@@ -114,10 +114,13 @@
 <div class="row">
     <!-- Recent Check-ins -->
     <div class="col-12 col-lg-6">
+        <!-- ส่วนที่ต้องแก้ไขใน dashboard.html -->
+<!-- หาส่วนของ "เช็คอินล่าสุด" แล้วแทนที่ด้วยโค้ดนี้ -->
+
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-semibold"><i class="fas fa-clock text-primary"></i> เช็คอินล่าสุด</h5>
-                <a href="{{ url_for('students.list') }}" class="btn btn-sm btn-outline-primary">ดูทั้งหมด</a>
+                <a href="{{ url_for('students.list', filter='today') }}" class="btn btn-sm btn-outline-primary">ดูทั้งหมด</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -154,10 +157,13 @@
 
     <!-- Students Running Low -->
     <div class="col-12 col-lg-6">
+        <!-- ส่วนที่ต้องแก้ไขใน dashboard.html -->
+<!-- หาส่วนของ "ครั้งเรียนใกล้หมด" แล้วแทนที่ด้วยโค้ดนี้ -->
+
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-semibold"><i class="fas fa-exclamation-triangle text-warning"></i> ครั้งเรียนใกล้หมด</h5>
-                <a href="{{ url_for('students.list') }}" class="btn btn-sm btn-outline-warning">ดูทั้งหมด</a>
+                <a href="{{ url_for('students.list', filter='warning') }}" class="btn btn-sm btn-outline-warning">ดูทั้งหมด</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">

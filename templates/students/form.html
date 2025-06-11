@@ -6,7 +6,7 @@
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb mb-0">
-        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-decoration-none">หน้าหลัก</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}" class="text-decoration-none">หน้าหลัก</a></li>
         <li class="breadcrumb-item"><a href="{{ url_for('students.list') }}" class="text-decoration-none">นักเรียน</a></li>
         {% if student %}
         <li class="breadcrumb-item"><a href="{{ url_for('students.detail', student_id=student.id) }}" class="text-decoration-none">{{ student.firstName }} {{ student.lastName }}</a></li>
