@@ -5,10 +5,10 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 mb-0 d-flex align-items-center gap-2">
-        <i class="fas fa-users text-info"></i>
+        <i class="fas fa-users text-primary"></i>
         <span>รายชื่อผู้ปกครอง</span>
     </h1>
-    <a href="{{ url_for('add_parent') }}" class="btn btn-info">
+    <a href="{{ url_for('add_parent') }}" class="btn btn-primary">
         <i class="fas fa-plus"></i>
         <span class="d-none d-sm-inline">เพิ่มผู้ปกครองใหม่</span>
     </a>
@@ -64,14 +64,11 @@
                             {% if parent.type == 'father' %}
                                 <span class="badge bg-primary">👨 พ่อ</span>
                             {% else %}
-                                <span class="badge bg-info">👩 แม่</span>
+                                <span class="badge bg-primary">👩 แม่</span>
                             {% endif %}
                         </td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <div class="avatar-sm rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-center p-2">
-                                    <i class="fas fa-user-tie text-info"></i>
-                                </div>
                                 <span class="fw-medium">{{ parent.name }}</span>
                             </div>
                         </td>
@@ -93,17 +90,19 @@
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            <a href="{{ url_for('edit_parent', parent_id=parent.id) }}"
-                               class="btn btn-sm btn-outline-primary" title="แก้ไข">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <form method="POST" action="{{ url_for('delete_parent', parent_id=parent.id) }}"
-                                  class="d-inline"
-                                  onsubmit="return confirm('ยืนยันการลบผู้ปกครอง {{ parent.name }}?\n\n⚠️ คำเตือน: สามารถลบได้เฉพาะผู้ปกครองที่ไม่มีนักเรียนผูกอยู่')">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="ลบ">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('edit_parent', parent_id=parent.id) }}"
+                                   class="btn btn-sm btn-outline-primary px-2 py-1" title="แก้ไข">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('delete_parent', parent_id=parent.id) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('ยืนยันการลบผู้ปกครอง {{ parent.name }}?\n\n⚠️ คำเตือน: สามารถลบได้เฉพาะผู้ปกครองที่ไม่มีนักเรียนผูกอยู่')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="ลบ">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% else %}
@@ -130,6 +129,66 @@
 </div>
 
 <script>
+// Custom button styles
+const style = document.createElement('style');
+style.textContent = `
+    /* Compact button group */
+    .btn-group {
+        gap: 2px;
+    }
+
+    /* Small buttons with icon only */
+    .btn-sm.px-2 {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+        font-size: 0.875rem;
+    }
+
+    /* Remove extra spacing */
+    .btn-group form {
+        margin: 0;
+    }
+
+    /* Hover effects */
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    /* Smaller icons */
+    .btn-sm i {
+        font-size: 0.875rem;
+    }
+
+    /* Table cell padding adjustment */
+    td:last-child {
+        padding: 0.5rem !important;
+    }
+`;
+document.head.appendChild(style);
+
+// Override any remaining blue colors on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix badge colors
+    document.querySelectorAll('.badge').forEach(badge => {
+        if (badge.classList.contains('bg-primary') || badge.classList.contains('bg-info')) {
+            badge.style.backgroundColor = '#ff6b35';
+        }
+    });
+
+    // Fix button colors
+    document.querySelectorAll('.btn-primary, .btn-outline-primary').forEach(btn => {
+        if (btn.classList.contains('btn-primary')) {
+            btn.style.backgroundColor = '#ff6b35';
+            btn.style.borderColor = '#ff6b35';
+        }
+    });
+});
+
 function filterParents() {
     const searchText = document.getElementById('parentSearchInput').value.toLowerCase();
     const rows = document.querySelectorAll('.parent-row');

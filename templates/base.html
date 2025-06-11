@@ -411,13 +411,18 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('add_student') }}">
-                            <i class="fas fa-user-plus"></i> เพิ่มนักเรียน
+                        <a class="nav-link" href="{{ url_for('students') }}">
+                            <i class="fas fa-users"></i> นักเรียน
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('parents') }}">
                             <i class="fas fa-users"></i> ผู้ปกครอง
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('import_data') }}">
+                            <i class="fas fa-file-import"></i> Import
                         </a>
                     </li>
                     <li class="nav-item dropdown">
@@ -449,7 +454,7 @@
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+                        {{ message|safe }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endfor %}

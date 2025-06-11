@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Import ข้อมูล - Basketball Academy{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+        <i class="fas fa-file-import text-info"></i>
+        <span>Import ข้อมูลนักเรียน</span>
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <!-- Upload Form -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="fas fa-upload"></i> อัพโหลดไฟล์ข้อมูล
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('process_import') }}" enctype="multipart/form-data" onsubmit="return confirmImport()">
+                    <div class="mb-4">
+                        <label class="form-label fw-medium">เลือกไฟล์ Excel หรือ CSV</label>
+                        <input type="file" name="file" class="form-control" required accept=".xlsx,.xls,.csv">
+                        <small class="text-muted">รองรับไฟล์ .xlsx, .xls, .csv</small>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>โปรดตรวจสอบก่อน Import:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>ข้อมูลในไฟล์ถูกต้องครบถ้วน</li>
+                            <li>รูปแบบวันที่เป็น DD/MM/YYYY</li>
+                            <li>เบอร์โทรศัพท์เป็นตัวเลข 10 หลัก</li>
+                            <li>กรณีพี่น้อง ให้ใส่ชื่อผู้ปกครองเหมือนกันทุกตัวอักษร</li>
+                        </ul>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-file-import"></i> เริ่ม Import ข้อมูล
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="fas fa-info-circle"></i> วิธีการ Import
+                </h5>
+            </div>
+            <div class="card-body">
+                <ol>
+                    <li class="mb-3">
+                        <strong>ดาวน์โหลด Template:</strong>
+                        <div class="mt-2">
+                            <a href="{{ url_for('download_template') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download"></i> ดาวน์โหลด Template Excel
+                            </a>
+                        </div>
+                    </li>
+                    <li class="mb-3">
+                        <strong>กรอกข้อมูลใน Template:</strong>
+                        <ul>
+                            <li>กรอกข้อมูลนักเรียนและผู้ปกครองตามคอลัมน์ที่กำหนด</li>
+                            <li>ข้อมูลที่ไม่มีให้ใส่เครื่องหมาย "-"</li>
+                            <li>วันที่ใช้รูปแบบ DD/MM/YYYY (เช่น 25/12/2023)</li>
+                        </ul>
+                    </li>
+                    <li class="mb-3">
+                        <strong>การจัดการผู้ปกครอง:</strong>
+                        <ul>
+                            <li>ระบบจะจับคู่ผู้ปกครองจาก <mark>ชื่อ + เบอร์โทร</mark></li>
+                            <li>ถ้าชื่อและเบอร์เหมือนกัน = ผู้ปกครองคนเดียวกัน</li>
+                            <li>เหมาะสำหรับกรณีพี่น้อง</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>อัพโหลดไฟล์และรอผลลัพธ์</strong>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <!-- Example Data -->
+        <div class="card bg-light border-0">
+            <div class="card-body">
+                <h5 class="card-title fw-semibold">
+                    <i class="fas fa-table"></i> ตัวอย่างข้อมูล
+                </h5>
+
+                <div class="table-responsive">
+                    <table class="table table-sm small">
+                        <thead>
+                            <tr>
+                                <th>คอลัมน์</th>
+                                <th>ตัวอย่าง</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ชื่อนักเรียน</td>
+                                <td>สมชาย</td>
+                            </tr>
+                            <tr>
+                                <td>นามสกุลนักเรียน</td>
+                                <td>ใจดี</td>
+                            </tr>
+                            <tr>
+                                <td>ชื่อเล่น</td>
+                                <td>ชาย</td>
+                            </tr>
+                            <tr>
+                                <td>วันเกิด</td>
+                                <td>15/03/2015</td>
+                            </tr>
+                            <tr>
+                                <td>เพศ</td>
+                                <td>ชาย</td>
+                            </tr>
+                            <tr>
+                                <td>โรงเรียน</td>
+                                <td>โรงเรียนสาธิต</td>
+                            </tr>
+                            <tr>
+                                <td>ระดับชั้น</td>
+                                <td>ป.3</td>
+                            </tr>
+                            <tr>
+                                <td>ประเภทผู้ปกครอง</td>
+                                <td>พ่อ</td>
+                            </tr>
+                            <tr>
+                                <td>ชื่อผู้ปกครอง</td>
+                                <td>นายสมศักดิ์ ใจดี</td>
+                            </tr>
+                            <tr>
+                                <td>เบอร์ผู้ปกครอง</td>
+                                <td>0891234567</td>
+                            </tr>
+                            <tr>
+                                <td>วันที่เริ่มเรียนครั้งแรก</td>
+                                <td>01/06/2023</td>
+                            </tr>
+                            <tr>
+                                <td>จำนวนครั้งที่เรียนไปแล้ว</td>
+                                <td>45</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips -->
+        <div class="card bg-info bg-opacity-10 border-0 mt-3">
+            <div class="card-body">
+                <h6 class="fw-semibold text-info">
+                    <i class="fas fa-lightbulb"></i> เคล็ดลับ
+                </h6>
+                <ul class="small mb-0">
+                    <li>ทดสอบด้วยข้อมูลจำนวนน้อยก่อน</li>
+                    <li>สำรองข้อมูลก่อน Import จำนวนมาก</li>
+                    <li>ตรวจสอบชื่อผู้ปกครองให้ตรงกันทุกตัวอักษร</li>
+                    <li>ระบบจะคำนวณครั้งคงเหลือให้อัตโนมัติ</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmImport() {
+    return confirm('คุณต้องการ Import ข้อมูลหรือไม่?\n\nกรุณาตรวจสอบความถูกต้องของข้อมูลก่อน Import');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Basketball Academy{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+        <i class="fas fa-chart-line text-primary"></i>
+        <span>Dashboard</span>
+    </h1>
+    <div class="text-muted small">
+        <i class="fas fa-clock"></i> อัพเดท: {{ current_time|thai_datetime }}
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small mb-1">นักเรียนทั้งหมด</div>
+                        <h3 class="mb-0">{{ total_students }}</h3>
+                    </div>
+                    <div class="rounded-circle p-3 bg-primary bg-opacity-10 text-center" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-user-graduate text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small mb-1">เช็คอินวันนี้</div>
+                        <h3 class="mb-0 text-success">{{ today_checkins }}</h3>
+                    </div>
+                    <div class="rounded-circle p-3 bg-success bg-opacity-10 text-center" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-check-circle text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small mb-1">เช็คอินเดือนนี้</div>
+                        <h3 class="mb-0">{{ month_checkins }}</h3>
+                    </div>
+                    <div class="rounded-circle p-3 bg-primary bg-opacity-10 text-center" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-calendar-check text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-muted small mb-1">ครั้งเรียนใกล้หมด</div>
+                        <h3 class="mb-0 text-warning">{{ low_classes_count }}</h3>
+                    </div>
+                    <div class="rounded-circle p-3 bg-warning bg-opacity-10 text-center" style="width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Today's Check-ins -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0 d-flex align-items-center gap-2">
+                    <i class="fas fa-clipboard-check text-success"></i>
+                    การเช็คอินวันนี้
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if today_attendance %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>เวลา</th>
+                                <th>ชื่อนักเรียน</th>
+                                <th>คงเหลือ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in today_attendance %}
+                            <tr>
+                                <td>
+                                    <small>{{ record.checkInTime|thai_time }}</small>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('student_detail', student_id=record.student.id) }}"
+                                       class="text-decoration-none">
+                                        {{ record.student.firstName }} {{ record.student.lastName }}
+                                        <small class="text-muted">({{ record.student.nickname }})</small>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ record.remainingAfter }} ครั้ง</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-calendar-times fa-2x mb-2 d-block opacity-50"></i>
+                    <p class="mb-0">ยังไม่มีการเช็คอินวันนี้</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Birthdays in 2 weeks -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0 d-flex align-items-center gap-2">
+                    <i class="fas fa-birthday-cake text-primary"></i>
+                    วันเกิดใน 2 สัปดาห์นี้
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if upcoming_birthdays %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>วันที่</th>
+                                <th>ชื่อนักเรียน</th>
+                                <th>อายุครบ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for birthday in upcoming_birthdays %}
+                            <tr>
+                                <td>
+                                    <small class="fw-medium">
+                                        {{ birthday.birthDate|thai_date }}
+                                        {% if birthday.days_until == 0 %}
+                                            <span class="badge bg-success ms-1">วันนี้!</span>
+                                        {% elif birthday.days_until == 1 %}
+                                            <span class="badge bg-warning ms-1">พรุ่งนี้</span>
+                                        {% else %}
+                                            <span class="text-muted">({{ birthday.days_until }} วัน)</span>
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('student_detail', student_id=birthday.id) }}"
+                                       class="text-decoration-none">
+                                        {{ birthday.firstName }} {{ birthday.lastName }}
+                                        <small class="text-muted">({{ birthday.nickname }})</small>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ birthday.turning_age }} ปี</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-calendar fa-2x mb-2 d-block opacity-50"></i>
+                    <p class="mb-0">ไม่มีวันเกิดใน 2 สัปดาห์นี้</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Students to Follow Up -->
+<div class="row g-4 mt-2">
+    <!-- Low Classes -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0 d-flex align-items-center gap-2">
+                    <i class="fas fa-exclamation-circle text-warning"></i>
+                    นักเรียนที่ครั้งเรียนใกล้หมด
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if low_classes_students %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ชื่อนักเรียน</th>
+                                <th>คงเหลือ</th>
+                                <th>ผู้ปกครอง</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in low_classes_students %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                       class="text-decoration-none">
+                                        {{ student.firstName }} {{ student.lastName }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if student.remainingClasses == 0 %}
+                                        <span class="badge bg-danger">หมด</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ student.remainingClasses }} ครั้ง</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if student.parent %}
+                                        <a href="tel:{{ student.parent.phone }}" class="text-decoration-none">
+                                            <i class="fas fa-phone-alt text-primary"></i>
+                                            {{ student.parent.phone }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-check-circle fa-2x mb-2 d-block opacity-50"></i>
+                    <p class="mb-0">ไม่มีนักเรียนที่ครั้งเรียนใกล้หมด</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Inactive Students -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0 d-flex align-items-center gap-2">
+                    <i class="fas fa-user-clock text-danger"></i>
+                    นักเรียนที่ไม่มาเรียนนาน
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if inactive_students %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ชื่อนักเรียน</th>
+                                <th>มาล่าสุด</th>
+                                <th>ติดต่อ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in inactive_students %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                       class="text-decoration-none">
+                                        {{ student.firstName }} {{ student.lastName }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {% if student.last_checkin %}
+                                            {{ student.last_checkin|thai_date }}
+                                            <span class="text-danger">({{ student.days_absent }} วัน)</span>
+                                        {% else %}
+                                            <span class="text-muted">ไม่เคยเช็คอิน</span>
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% if student.parent %}
+                                        <a href="tel:{{ student.parent.phone }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-phone"></i>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-check-circle fa-2x mb-2 d-block opacity-50"></i>
+                    <p class="mb-0">ทุกคนมาเรียนสม่ำเสมอ</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="position-fixed bottom-0 end-0 p-4" style="z-index: 1000;">
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('add_student') }}" class="btn btn-primary shadow-lg" title="เพิ่มนักเรียนใหม่">
+            <i class="fas fa-plus"></i>
+            <span class="d-none d-md-inline ms-1">เพิ่มนักเรียน</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}หน้าหลัก - Basketball Academy{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 d-flex align-items-center gap-2">
+        <i class="fas fa-users text-primary"></i>
+        <span>รายชื่อนักเรียน</span>
+    </h1>
+    <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i>
+        <span class="d-none d-sm-inline">เพิ่มนักเรียนใหม่</span>
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card border-0 h-100">
+            <div class="card-body d-flex align-items-center">
+               <div class="rounded-circle p-3 bg-primary bg-opacity-10 me-3">
+                        <i class="fas fa-user-graduate fa-2x text-primary"></i>
+                    </div>
+                <div>
+                    <h6 class="text-muted mb-1">นักเรียนทั้งหมด</h6>
+                    <h3 class="mb-0">{{ students|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           id="searchInput"
+                           class="form-control border-start-0 ps-0"
+                           placeholder="ค้นหาชื่อนักเรียน หรือชื่อผู้ปกครอง..."
+                           onkeyup="filterStudents()">
+                </div>
+            </div>
+            <div class="col-12 col-md-3">
+                <select class="form-select" id="classFilter" onchange="filterStudents()">
+                    <option value="">ครั้งเรียนทั้งหมด</option>
+                    <option value="available">มีครั้งเรียนเหลือ</option>
+                    <option value="warning">ใกล้หมด (≤ 5 ครั้ง)</option>
+                    <option value="empty">หมดแล้ว</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> ล้างการค้นหา
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Students Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="studentsTable">
+                <thead>
+                    <tr>
+                        <th>ชื่อนักเรียน</th>
+                        <th class="d-none d-md-table-cell">โรงเรียน</th>
+                        <th>ผู้ปกครอง</th>
+                        <th class="d-none d-sm-table-cell">เบอร์ติดต่อ</th>
+                        <th class="text-center">คงเหลือ</th>
+                        <th class="text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr class="student-row"
+                        data-student-name="{{ (student.firstName + ' ' + student.lastName + ' ' + student.nickname).lower() }}"
+                        data-parent-name="{{ student.parent.name.lower() if student.parent else '' }}"
+                        data-remaining="{{ student.remainingClasses }}">
+                        <td>
+                            <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                               class="text-decoration-none d-flex align-items-center gap-2">
+                                <div>
+                                    <span class="fw-medium">{{ student.firstName }} {{ student.lastName }}</span>
+                                    <small class="text-muted d-block">({{ student.nickname }})</small>
+                                </div>
+                            </a>
+                        </td>
+                        <td class="d-none d-md-table-cell text-muted">{{ student.school }} - {{ student.grade }}</td>
+                        <td>
+                            {% if student.parent %}
+                                <span class="text-muted">{{ student.parent.name }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="d-none d-sm-table-cell">
+                            {% if student.parent %}
+                                <a href="tel:{{ student.parent.phone }}" class="text-decoration-none text-muted">
+                                    <i class="fas fa-phone-alt text-success me-1"></i>
+                                    {{ student.parent.phone }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if student.remainingClasses > 5 %}
+                                <span class="badge bg-success">{{ student.remainingClasses }} ครั้ง</span>
+                            {% elif student.remainingClasses > 0 %}
+                                <span class="badge bg-warning">{{ student.remainingClasses }} ครั้ง</span>
+                            {% else %}
+                                <span class="badge bg-danger">หมด</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a href="{{ url_for('student_detail', student_id=student.id) }}"
+                                   class="btn btn-sm btn-outline-primary" title="ดูรายละเอียด">
+                                    <i class="fas fa-eye"></i>
+                                    <span class="d-none d-lg-inline">ดู</span>
+                                </a>
+                                {% if student.remainingClasses > 0 %}
+                                <form method="POST" action="{{ url_for('checkin', student_id=student.id) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('ยืนยันการเช็คอิน {{ student.name }}?')">
+                                    <button type="submit" class="btn btn-sm btn-success" title="เช็คอิน">
+                                        <i class="fas fa-check"></i>
+                                        <span class="d-none d-lg-inline">เช็คอิน</span>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fas fa-basketball-ball fa-3x mb-3 d-block opacity-25"></i>
+                                <p class="mb-0">ยังไม่มีข้อมูลนักเรียน</p>
+                                <a href="{{ url_for('add_student') }}" class="btn btn-primary mt-3">
+                                    <i class="fas fa-plus"></i> เพิ่มนักเรียนคนแรก
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Results Counter -->
+        <div class="px-3 py-2 bg-light border-top" id="resultsCounter" style="display: none;">
+            <small class="text-muted">
+                แสดง <span id="visibleCount">0</span> จากทั้งหมด <span id="totalCount">{{ students|length }}</span> รายการ
+            </small>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile View Info -->
+<div class="d-sm-none mt-3 text-center text-muted small">
+    <i class="fas fa-info-circle"></i> แตะที่ชื่อเพื่อดูรายละเอียด
+</div>
+
+<script>
+function filterStudents() {
+    const searchText = document.getElementById('searchInput').value.toLowerCase();
+    const classFilter = document.getElementById('classFilter').value;
+    const rows = document.querySelectorAll('.student-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const studentName = row.dataset.studentName;
+        const parentName = row.dataset.parentName;
+        const remaining = parseInt(row.dataset.remaining);
+
+        // Text search
+        const matchesSearch = searchText === '' ||
+                            studentName.includes(searchText) ||
+                            parentName.includes(searchText);
+
+        // Class filter
+        let matchesFilter = true;
+        if (classFilter === 'available') {
+            matchesFilter = remaining > 0;
+        } else if (classFilter === 'warning') {
+            matchesFilter = remaining > 0 && remaining <= 5;
+        } else if (classFilter === 'empty') {
+            matchesFilter = remaining === 0;
+        }
+
+        if (matchesSearch && matchesFilter) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Update counter
+    const counter = document.getElementById('resultsCounter');
+    const visibleSpan = document.getElementById('visibleCount');
+
+    if (searchText || classFilter) {
+        counter.style.display = 'block';
+        visibleSpan.textContent = visibleCount;
+    } else {
+        counter.style.display = 'none';
+    }
+
+    // Show no results message
+    const tbody = document.querySelector('#studentsTable tbody');
+    let noResultsRow = document.getElementById('noResultsRow');
+
+    if (visibleCount === 0 && rows.length > 0) {
+        if (!noResultsRow) {
+            noResultsRow = document.createElement('tr');
+            noResultsRow.id = 'noResultsRow';
+            noResultsRow.innerHTML = `
+                <td colspan="6" class="text-center py-4 text-muted">
+                    <i class="fas fa-search fa-2x mb-2 d-block opacity-50"></i>
+                    ไม่พบข้อมูลที่ค้นหา
+                </td>
+            `;
+            tbody.appendChild(noResultsRow);
+        }
+        noResultsRow.style.display = '';
+    } else if (noResultsRow) {
+        noResultsRow.style.display = 'none';
+    }
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('classFilter').value = '';
+    filterStudents();
+}
+
+// Auto-focus search on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('searchInput').focus();
+});
+</script>
+{% endblock %}

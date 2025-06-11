@@ -6,7 +6,7 @@
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb mb-0">
-        <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">หน้าหลัก</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
         <li class="breadcrumb-item"><a href="{{ url_for('parents') }}" class="text-decoration-none">ผู้ปกครอง</a></li>
         <li class="breadcrumb-item active">{{ 'แก้ไขข้อมูล' if parent else 'เพิ่มผู้ปกครอง' }}</li>
     </ol>
@@ -14,8 +14,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 mb-0 d-flex align-items-center gap-2">
-        <i class="fas fa-{{ 'user-edit text-warning' if parent else 'user-plus text-info' }}"></i>
-        <span>{{ 'แก้ไขข้อมูลผู้ปกครอง' if parent else 'เพิ่มผู้ปกครองใหม่' }}</span>
+<i class="fas fa-{{ 'user-edit text-warning' if parent else 'user-plus text-primary' }}"></i>        <span>{{ 'แก้ไขข้อมูลผู้ปกครอง' if parent else 'เพิ่มผู้ปกครองใหม่' }}</span>
     </h1>
 </div>
 

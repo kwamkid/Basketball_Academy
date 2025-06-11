@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, send_file
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -9,6 +9,9 @@ import os
 import secrets
 from dotenv import load_dotenv
 import math
+import pandas as pd
+import io
+from werkzeug.utils import secure_filename
 
 # Load environment variables
 load_dotenv()
@@ -189,21 +192,40 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    """หน้าหลัก - แสดงรายชื่อนักเรียนทั้งหมด"""
-    students = []
+    """หน้าหลัก - Dashboard"""
+    # คำนวณสถิติ
+    total_students = 0
+    active_students = 0
     students_ref = db.collection('students').stream()
 
     for doc in students_ref:
+        total_students += 1
+        student = doc.to_dict()
+        if student.get('remainingClasses', 0) > 0:
+            active_students += 1
+
+    # นับผู้ปกครอง
+    total_parents = 0
+    parents_ref = db.collection('parents').stream()
+    for doc in parents_ref:
+        total_parents += 1
+
+    # นับเช็คอินวันนี้
+    today = datetime.now(TH_TZ).strftime('%Y-%m-%d')
+    today_checkins = 0
+    recent_checkins = []
+
+    attendance_ref = db.collection('attendance').where('checkInDate', '==', today).stream()
+    for doc in attendance_ref:
+        today_checkins += 1
+        # เพิ่มข้อมูลสำหรับแสดง (ถ้าต้องการ)
+
+    # หานักเรียนที่ครั้งเรียนใกล้หมด
+    low_classes_students = []
+    students_ref = db.collection('students').where('remainingClasses', '<=', 5).stream()
+    for doc in students_ref:
         student = doc.to_dict()
         student['id'] = doc.id
-
-        # Handle old data format (name) vs new format (firstName, lastName)
-        if 'name' in student and 'firstName' not in student:
-            # Convert old format to new format
-            names = student['name'].split(' ', 1)
-            student['firstName'] = names[0]
-            student['lastName'] = names[1] if len(names) > 1 else ''
-            student['nickname'] = student.get('nickname', names[0])
 
         # ดึงข้อมูลผู้ปกครอง
         if 'parentId' in student and student['parentId']:
@@ -211,16 +233,18 @@ def index():
             if parent_doc.exists:
                 student['parent'] = parent_doc.to_dict()
 
-        # แปลง createdAt เป็นเวลาไทย
-        if 'createdAt' in student and student['createdAt']:
-            student['createdAtThai'] = student['createdAt'].astimezone(TH_TZ) if hasattr(student['createdAt'],
-                                                                                         'astimezone') else student[
-                'createdAt']
+        low_classes_students.append(student)
 
-        students.append(student)
+    # เรียงลำดับตามจำนวนครั้งที่เหลือ
+    low_classes_students.sort(key=lambda x: x.get('remainingClasses', 0))
 
-    return render_template('index.html', students=students)
-
+    return render_template('index.html',
+                           total_students=total_students,
+                           active_students=active_students,
+                           today_checkins=today_checkins,
+                           total_parents=total_parents,
+                           recent_checkins=recent_checkins,
+                           low_classes_students=low_classes_students[:5])  # แสดงแค่ 5 คนแรก
 
 @app.route('/parents')
 @login_required
@@ -266,10 +290,40 @@ def add_parent():
     return render_template('parent_form.html', parent=None)
 
 
-@app.route('/add_student', methods=['GET', 'POST'])
+@app.route('/students')
+@login_required
+def students():
+    """หน้าจัดการนักเรียน - แสดงรายชื่อทั้งหมด"""
+    students = []
+    students_ref = db.collection('students').stream()
+
+    for doc in students_ref:
+        student = doc.to_dict()
+        student['id'] = doc.id
+
+        if 'name' in student and 'firstName' not in student:
+            names = student['name'].split(' ', 1)
+            student['firstName'] = names[0]
+            student['lastName'] = names[1] if len(names) > 1 else ''
+            student['nickname'] = student.get('nickname', names[0])
+
+        if 'parentId' in student and student['parentId']:
+            parent_doc = db.collection('parents').document(student['parentId']).get()
+            if parent_doc.exists:
+                student['parent'] = parent_doc.to_dict()
+
+        if 'createdAt' in student and student['createdAt']:
+            student['createdAtThai'] = student['createdAt'].astimezone(TH_TZ) if hasattr(student['createdAt'], 'astimezone') else student['createdAt']
+
+        students.append(student)
+
+    return render_template('students.html', students=students)
+
+
+@app.route('/students/add', methods=['GET', 'POST'])
 @login_required
 def add_student():
-    """เพิ่มนักเรียน"""
+    """เพิ่มนักเรียนใหม่"""
     if request.method == 'POST':
         data = {
             'firstName': request.form['firstName'],
@@ -284,14 +338,13 @@ def add_student():
             'allergies': request.form.get('allergies', ''),
             'parentId': request.form.get('parentId', ''),
             'remainingClasses': int(request.form['remainingClasses']),
-            'createdAt': datetime.now(TH_TZ)  # ใช้เวลาไทย
+            'createdAt': datetime.now(TH_TZ)
         }
 
         db.collection('students').add(data)
         flash('เพิ่มนักเรียนสำเร็จ!', 'success')
-        return redirect(url_for('index'))
+        return redirect(url_for('students'))
 
-    # ดึงรายชื่อผู้ปกครองสำหรับ dropdown
     parents = []
     parents_ref = db.collection('parents').stream()
     for doc in parents_ref:
@@ -300,7 +353,6 @@ def add_student():
         parents.append(parent)
 
     return render_template('student_form.html', student=None, parents=parents)
-
 
 @app.route('/student/<student_id>')
 @login_required
@@ -649,6 +701,237 @@ def change_password():
 
     flash('เปลี่ยนรหัสผ่านสำเร็จ!', 'success')
     return redirect(url_for('settings'))
+
+
+# Import Data Routes
+@app.route('/import_data')
+@login_required
+def import_data():
+    """หน้า Import ข้อมูล"""
+    return render_template('import_data.html')
+
+
+@app.route('/process_import', methods=['POST'])
+@login_required
+def process_import():
+    """ประมวลผลไฟล์ที่ import"""
+    if 'file' not in request.files:
+        flash('กรุณาเลือกไฟล์', 'error')
+        return redirect(url_for('import_data'))
+
+    file = request.files['file']
+    if file.filename == '':
+        flash('กรุณาเลือกไฟล์', 'error')
+        return redirect(url_for('import_data'))
+
+    if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
+        flash('รองรับเฉพาะไฟล์ Excel (.xlsx, .xls) หรือ CSV', 'error')
+        return redirect(url_for('import_data'))
+
+    try:
+        # อ่านไฟล์
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(io.StringIO(file.stream.read().decode("utf-8")))
+        else:
+            df = pd.read_excel(file)
+
+        # ตรวจสอบคอลัมน์ที่จำเป็น
+        required_columns = ['ชื่อนักเรียน', 'นามสกุลนักเรียน', 'ชื่อเล่น', 'วันเกิด',
+                            'เพศ', 'โรงเรียน', 'ระดับชั้น', 'ชื่อผู้ปกครอง', 'เบอร์ผู้ปกครอง']
+
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            flash(f'ไฟล์ขาดคอลัมน์: {", ".join(missing_columns)}', 'error')
+            return redirect(url_for('import_data'))
+
+        # เริ่มประมวลผล
+        imported_count = 0
+        error_rows = []
+        parent_cache = {}  # เก็บ parent ที่สร้างแล้ว
+
+        for index, row in df.iterrows():
+            try:
+                # จัดการข้อมูลผู้ปกครอง
+                parent_name = str(row['ชื่อผู้ปกครอง']).strip()
+                parent_phone = str(row['เบอร์ผู้ปกครอง']).strip()
+
+                # ตรวจสอบว่ามีผู้ปกครองในแคชหรือยัง
+                parent_key = f"{parent_name}_{parent_phone}"
+
+                if parent_key in parent_cache:
+                    parent_id = parent_cache[parent_key]
+                else:
+                    # ค้นหาผู้ปกครองในฐานข้อมูล
+                    parent_query = db.collection('parents').where('name', '==', parent_name).where('phone', '==',
+                                                                                                   parent_phone).limit(
+                        1).stream()
+                    parent_exists = False
+
+                    for doc in parent_query:
+                        parent_id = doc.id
+                        parent_exists = True
+                        break
+
+                    # ถ้าไม่มีให้สร้างใหม่
+                    if not parent_exists:
+                        parent_data = {
+                            'type': 'father' if str(row.get('ประเภทผู้ปกครอง', 'พ่อ')).strip() == 'พ่อ' else 'mother',
+                            'name': parent_name,
+                            'occupation': str(row.get('อาชีพผู้ปกครอง', '')).strip() if pd.notna(
+                                row.get('อาชีพผู้ปกครอง')) else '',
+                            'phone': parent_phone,
+                            'address': str(row.get('ที่อยู่ผู้ปกครอง', '')).strip() if pd.notna(
+                                row.get('ที่อยู่ผู้ปกครอง')) else '',
+                            'createdAt': datetime.now(TH_TZ)
+                        }
+                        parent_ref = db.collection('parents').add(parent_data)
+                        parent_id = parent_ref[1].id
+
+                    parent_cache[parent_key] = parent_id
+
+                # จัดการข้อมูลนักเรียน
+                # แปลงวันที่
+                birth_date = pd.to_datetime(row['วันเกิด'], dayfirst=True).strftime('%Y-%m-%d')
+
+                # คำนวณจำนวนครั้งคงเหลือ
+                total_classes = 8  # ค่าเริ่มต้น 1 คอร์ส
+                if pd.notna(row.get('จำนวนครั้งที่เรียนไปแล้ว')):
+                    classes_used = int(row['จำนวนครั้งที่เรียนไปแล้ว'])
+                    # สมมติว่าซื้อคอร์สตามจำนวนที่ใช้ไป (ปัดขึ้นเป็นจำนวนคอร์ส)
+                    courses_bought = ((classes_used - 1) // 8) + 1
+                    total_classes = courses_bought * 8
+                    remaining_classes = total_classes - classes_used
+                else:
+                    remaining_classes = 8
+
+                student_data = {
+                    'firstName': str(row['ชื่อนักเรียน']).strip(),
+                    'lastName': str(row['นามสกุลนักเรียน']).strip(),
+                    'nickname': str(row['ชื่อเล่น']).strip(),
+                    'birthDate': birth_date,
+                    'gender': str(row['เพศ']).strip(),
+                    'nationality': str(row.get('สัญชาติ', 'ไทย')).strip(),
+                    'school': str(row['โรงเรียน']).strip(),
+                    'grade': str(row['ระดับชั้น']).strip(),
+                    'phone': str(row.get('เบอร์นักเรียน', '')).strip() if pd.notna(
+                        row.get('เบอร์นักเรียน')) and row.get('เบอร์นักเรียน') != '-' else '',
+                    'allergies': str(row.get('ประวัติแพ้ยา', '')).strip() if pd.notna(
+                        row.get('ประวัติแพ้ยา')) and row.get('ประวัติแพ้ยา') != '-' else '',
+                    'parentId': parent_id,
+                    'remainingClasses': remaining_classes,
+                    'createdAt': datetime.now(TH_TZ),
+                    'importNote': str(row.get('หมายเหตุ', '')).strip() if pd.notna(row.get('หมายเหตุ')) else ''
+                }
+
+                # เพิ่มข้อมูลการเรียน
+                if pd.notna(row.get('วันที่เริ่มเรียนครั้งแรก')):
+                    first_class_date = pd.to_datetime(row['วันที่เริ่มเรียนครั้งแรก'], dayfirst=True)
+                    student_data['firstClassDate'] = first_class_date.strftime('%Y-%m-%d')
+
+                if pd.notna(row.get('จำนวนครั้งที่เรียนไปแล้ว')):
+                    student_data['totalClassesAttended'] = int(row['จำนวนครั้งที่เรียนไปแล้ว'])
+
+                # บันทึกนักเรียน
+                student_ref = db.collection('students').add(student_data)
+
+                # สร้าง log การ import
+                log_data = {
+                    'studentId': student_ref[1].id,
+                    'type': 'import',
+                    'performedBy': current_user.username,
+                    'timestamp': datetime.now(TH_TZ),
+                    'note': f'Import จากไฟล์ - เริ่มเรียน: {student_data.get("firstClassDate", "-")}, เรียนไปแล้ว: {student_data.get("totalClassesAttended", 0)} ครั้ง'
+                }
+                db.collection('class_logs').add(log_data)
+
+                imported_count += 1
+
+            except Exception as e:
+                error_rows.append({
+                    'row': index + 2,  # +2 เพราะ Excel เริ่มที่ 1 และมี header
+                    'student': f"{row.get('ชื่อนักเรียน', '')} {row.get('นามสกุลนักเรียน', '')}",
+                    'error': str(e)
+                })
+
+        # แสดงผลลัพธ์
+        if imported_count > 0:
+            flash(f'✅ Import ข้อมูลสำเร็จ {imported_count} รายการ', 'success')
+
+        if error_rows:
+            error_msg = 'มีข้อผิดพลาดในบางแถว:<br>'
+            for err in error_rows[:5]:  # แสดงแค่ 5 ข้อแรก
+                error_msg += f'- แถว {err["row"]} ({err["student"]}): {err["error"]}<br>'
+            if len(error_rows) > 5:
+                error_msg += f'และอีก {len(error_rows) - 5} ข้อ'
+            flash(error_msg, 'warning')
+
+        return redirect(url_for('index'))
+
+    except Exception as e:
+        flash(f'เกิดข้อผิดพลาด: {str(e)}', 'error')
+        return redirect(url_for('import_data'))
+
+
+@app.route('/download_template')
+@login_required
+def download_template():
+    """ดาวน์โหลดไฟล์ template"""
+    # สร้าง DataFrame ตัวอย่าง
+    template_data = {
+        'ชื่อนักเรียน': ['สมชาย', 'สมหญิง'],
+        'นามสกุลนักเรียน': ['ใจดี', 'ใจดี'],
+        'ชื่อเล่น': ['ชาย', 'หญิง'],
+        'วันเกิด': ['15/03/2015', '10/08/2017'],
+        'เพศ': ['ชาย', 'หญิง'],
+        'สัญชาติ': ['ไทย', 'ไทย'],
+        'โรงเรียน': ['โรงเรียนสาธิต', 'โรงเรียนสาธิต'],
+        'ระดับชั้น': ['ป.3', 'ป.1'],
+        'เบอร์นักเรียน': ['0812345678', '-'],
+        'ประวัติแพ้ยา': ['-', 'แพ้ถั่ว'],
+        'ประเภทผู้ปกครอง': ['พ่อ', 'พ่อ'],
+        'ชื่อผู้ปกครอง': ['นายสมศักดิ์ ใจดี', 'นายสมศักดิ์ ใจดี'],
+        'อาชีพผู้ปกครอง': ['ธุรกิจส่วนตัว', 'ธุรกิจส่วนตัว'],
+        'เบอร์ผู้ปกครอง': ['0891234567', '0891234567'],
+        'ที่อยู่ผู้ปกครอง': ['123 หมู่ 1 ต.บางนา', '123 หมู่ 1 ต.บางนา'],
+        'วันที่เริ่มเรียนครั้งแรก': ['01/06/2023', '15/09/2023'],
+        'จำนวนครั้งที่เรียนไปแล้ว': [45, 20],
+        'หมายเหตุ': ['-', 'น้องของสมชาย']
+    }
+
+    df = pd.DataFrame(template_data)
+
+    # สร้างไฟล์ Excel
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='นักเรียน', index=False)
+
+        # จัด format
+        workbook = writer.book
+        worksheet = writer.sheets['นักเรียน']
+
+        # Header format
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#ff6b35',
+            'font_color': 'white',
+            'border': 1
+        })
+
+        # เขียน header ใหม่
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+
+        # ปรับความกว้างคอลัมน์
+        worksheet.set_column('A:R', 15)
+
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='template_import_students.xlsx'
+    )
 
 
 if __name__ == '__main__':
